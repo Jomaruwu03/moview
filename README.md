@@ -4,7 +4,7 @@
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -13,7 +13,7 @@
 
 ---
 
-## 📑 Core Features
+## Core Features
 
 | Feature | Description |
 |---|---|
@@ -22,7 +22,7 @@
 | **Responsive Export** | Exports high-quality images (1080x1920) optimized for platforms like Instagram Stories. |
 | **Authentication** | Secure user login and registration powered by Supabase. |
 
-## 🚀 Setup and Installation
+##  Setup and Installation
 
 ### 1. Clone the repository
 ```bash
@@ -60,7 +60,7 @@ npm run dev
 
 ---
 
-## 📑 Características Principales
+## Características Principales
 
 | Característica | Descripción |
 |---|---|
@@ -69,7 +69,7 @@ npm run dev
 | **Exportación Responsiva** | Exporta imágenes de alta calidad (1080x1920) optimizadas para Instagram Stories. |
 | **Autenticación** | Inicio de sesión y registro seguros a través de Supabase. |
 
-## 🚀 Configuración e Instalación
+##  Configuración e Instalación
 
 ### 1. Clonar el repositorio
 ```bash
