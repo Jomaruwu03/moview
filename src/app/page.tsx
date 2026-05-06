@@ -1,6 +1,12 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { ReviewBuilder } from '@/components/ReviewBuilder';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Creador de Widgets',
+  description: 'Generador interactivo para crear, personalizar y compartir widgets de tus reseñas de películas favoritas.',
+};
 
 export default async function Home() {
   const supabase = await createClient();
