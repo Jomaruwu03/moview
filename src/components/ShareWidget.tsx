@@ -132,7 +132,13 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
               )}
             </div>
 
-            <h2 className="text-6xl font-black text-center mb-6 drop-shadow-md max-w-[700px] leading-tight">{movie.title}</h2>
+            <h2 className={`font-black text-center mb-6 drop-shadow-md max-w-[700px] leading-tight ${
+              movie.title.length > 40 ? 'text-4xl' :
+              movie.title.length > 20 ? 'text-5xl' :
+              'text-6xl'
+            }`}>
+              {movie.title}
+            </h2>
             <p className="text-white/60 text-3xl mb-12 font-medium">{movie.release_date?.split('-')[0]}</p>
 
             <div className="flex gap-4 mb-12">
@@ -153,7 +159,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
             </div>
 
             {reviewText && (
-              <p className="text-center italic text-white/90 text-4xl mb-12 leading-relaxed max-w-[700px] line-clamp-4">
+              <p className="text-center italic text-white/90 text-4xl mb-12 leading-relaxed max-w-[700px] break-words">
                 "{reviewText}"
               </p>
             )}
@@ -207,7 +213,11 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
             </div>
 
             {/* Movie Title */}
-            <h2 className="text-5xl font-black text-center mb-8 uppercase leading-tight text-[#1c1917] max-w-[600px] line-clamp-2 z-20">
+            <h2 className={`font-black text-center mb-8 uppercase leading-tight text-[#1c1917] max-w-[600px] z-20 pb-2 break-words ${
+              movie.title.length > 40 ? 'text-3xl' :
+              movie.title.length > 20 ? 'text-4xl' :
+              'text-5xl'
+            }`}>
               {movie.title}
             </h2>
 
@@ -225,13 +235,13 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
 
             {/* Review Text */}
             {reviewText && (
-              <div className="w-[600px] text-center mb-8 z-20">
-                <p className="font-serif text-[#1c1917] text-3xl italic leading-relaxed line-clamp-3">"{reviewText}"</p>
+              <div className="w-[600px] text-center mb-40 z-20">
+                <p className="font-serif text-[#1c1917] text-3xl italic leading-relaxed break-words">"{reviewText}"</p>
               </div>
             )}
 
             {/* Barcode */}
-            <div className="mt-auto mb-10 w-[600px] flex justify-center gap-2 opacity-80 z-20">
+            <div className="absolute bottom-16 w-[600px] flex justify-center gap-2 opacity-80 z-20">
                {[...Array(45)].map((_, i) => <div key={i} className="bg-[#1c1917] h-24" style={{width: `${Math.floor(Math.random() * 8) + 3}px`}}></div>)}
             </div>
           </div>

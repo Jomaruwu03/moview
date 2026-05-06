@@ -131,9 +131,9 @@ export function ReviewBuilder({ user }: { user: any }) {
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all resize-none"
                 rows={3}
                 maxLength={50}
-                placeholder="¿Qué te pareció la película? (Max 50 char)"
+                placeholder="¿Qué te pareció la película? (Sé breve)"
               />
-              <p className="text-right text-xs text-neutral-500 mt-1">{reviewText.length}/50</p>
+              <p className="text-right text-xs text-neutral-500 mt-1">{reviewText.length}/50 caracteres</p>
             </div>
 
             <div>
