@@ -1,52 +1,93 @@
-import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = {
-  title: 'Iniciar Sesión',
-  description: 'Accede a MoView o crea una cuenta para empezar a compartir tus reseñas cinematográficas en formatos espectaculares.',
-}
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
-export default async function LoginPage() {
-  const login = async (formData: FormData) => {
-    'use server'
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const supabase = await createClient()
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  
+  const [isLoading, setIsLoading] = useState<'login' | 'signup' | null>(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+  const supabase = createClient()
 
-    if (error) {
-      redirect('/login?message=No+se+pudo+iniciar+sesión')
+  const validate = (isSignup: boolean) => {
+    if (!email || !email.includes('@')) {
+      toast.error('Correo inválido', { description: 'Por favor, ingresa un correo electrónico válido.' })
+      return false
     }
-    redirect('/')
+    if (!password || password.length < 6) {
+      toast.error('Contraseña muy corta', { description: 'Tu contraseña debe tener al menos 6 caracteres.' })
+      return false
+    }
+    if (isSignup && !username) {
+      toast.error('Falta usuario', { description: 'Por favor, escoge un nombre de usuario.' })
+      return false
+    }
+    return true
   }
 
-  const signup = async (formData: FormData) => {
-    'use server'
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const username = formData.get('username') as string
-    const supabase = await createClient()
+  const handleLogin = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!validate(false)) return
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username: username || email.split('@')[0],
-          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || email}`
-        }
+    setIsLoading('login')
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        toast.error('Error al iniciar sesión', { description: error.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : error.message })
+      } else {
+        toast.success('¡Bienvenido de vuelta!')
+        router.push('/')
+        router.refresh()
       }
-    })
-
-    if (error) {
-      redirect('/login?message=No+se+pudo+registrar')
+    } catch (err: any) {
+      toast.error('Error inesperado', { description: err?.message || 'Ocurrió un problema de red.' })
+    } finally {
+      setIsLoading(null)
     }
-    redirect('/login?message=Revisa+tu+correo+para+continuar')
+  }
+
+  const handleSignup = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!validate(true)) return
+
+    setIsLoading('signup')
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username || email.split('@')[0],
+            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || email}`
+          }
+        }
+      })
+
+      if (error) {
+        toast.error('Error de registro', { description: error.message })
+      } else if (data.session) {
+        toast.success('Cuenta creada', { description: '¡Bienvenido! Entrando al panel...' })
+        router.push('/')
+        router.refresh()
+      } else {
+        toast.info('Verifica tu correo', { description: 'Por seguridad, revisa tu bandeja de entrada para activar tu cuenta. Si desactivas esta opción en Supabase, entrarás automáticamente.' })
+      }
+    } catch (err: any) {
+      toast.error('Error inesperado', { description: err?.message || 'No pudimos conectarnos.' })
+    } finally {
+      setIsLoading(null)
+    }
   }
 
   return (
@@ -65,6 +106,8 @@ export default async function LoginPage() {
             <input
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all placeholder:text-neutral-600"
               name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
               required
             />
@@ -75,6 +118,8 @@ export default async function LoginPage() {
             <input
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all placeholder:text-neutral-600"
               name="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               placeholder="cinemaphile"
             />
           </div>
@@ -85,6 +130,8 @@ export default async function LoginPage() {
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all placeholder:text-neutral-600"
               type="password"
               name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
             />
@@ -92,16 +139,18 @@ export default async function LoginPage() {
 
           <div className="flex flex-col gap-3">
             <button
-              formAction={login}
-              className="w-full bg-white text-black rounded-xl px-4 py-3.5 font-bold hover:bg-neutral-200 transition-colors shadow-lg"
+              onClick={handleLogin}
+              disabled={isLoading !== null}
+              className="w-full flex items-center justify-center gap-2 bg-white text-black rounded-xl px-4 py-3.5 font-bold hover:bg-neutral-200 transition-colors shadow-lg disabled:opacity-50"
             >
-              Iniciar Sesión
+              {isLoading === 'login' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Iniciar Sesión'}
             </button>
             <button
-              formAction={signup}
-              className="w-full bg-transparent border border-neutral-800 rounded-xl px-4 py-3.5 text-neutral-300 font-bold hover:bg-neutral-800 hover:text-white transition-colors"
+              onClick={handleSignup}
+              disabled={isLoading !== null}
+              className="w-full flex items-center justify-center gap-2 bg-transparent border border-neutral-800 rounded-xl px-4 py-3.5 text-neutral-300 font-bold hover:bg-neutral-800 hover:text-white transition-colors disabled:opacity-50"
             >
-              Crear Cuenta
+              {isLoading === 'signup' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crear Cuenta'}
             </button>
           </div>
         </form>

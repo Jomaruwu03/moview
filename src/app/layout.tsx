@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   }
 };
 
+import { Toaster } from "sonner";
+import { LanguageProvider } from "@/context/LanguageContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,7 +37,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <LanguageProvider>
+          {children}
+          <Toaster theme="dark" position="top-center" richColors closeButton />
+        </LanguageProvider>
+      </body>
     </html>
   );
 }

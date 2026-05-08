@@ -34,6 +34,8 @@ interface ShareWidgetProps {
   theme?: 'modern' | 'retro-ticket';
 }
 
+import { toast } from 'sonner';
+
 export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 'poster', theme = 'modern' }: ShareWidgetProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -74,6 +76,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
       link.click();
     } catch (error: any) {
       console.error('Error al generar imagen:', error?.message || error);
+      toast.error('Error de exportación', { description: 'Hubo un problema al generar la imagen.' });
     } finally {
       setIsExporting(false);
     }
