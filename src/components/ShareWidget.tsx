@@ -34,9 +34,11 @@ interface ShareWidgetProps {
   theme?: 'modern' | 'retro-ticket';
 }
 
+import { useLanguage } from '@/context/LanguageContext';
 import { toast } from 'sonner';
 
 export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 'poster', theme = 'modern' }: ShareWidgetProps) {
+  const { language } = useLanguage();
   const widgetRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -126,7 +128,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                   <img src={avatarBase64} alt={user.username} className="w-full h-full object-cover" />
                 )}
               </div>
-              <p className="font-medium text-2xl">@{user.username} vio</p>
+              <p className="font-medium text-2xl">@{user.username} {language === 'es' ? 'vio' : 'watched'}</p>
             </div>
 
             <div className="w-[440px] h-[660px] rounded-[2rem] overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.8)] mb-12 border-2 border-white/10 bg-neutral-800">
@@ -227,11 +229,11 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
             {/* Guest Info */}
             <div className="w-[600px] flex items-center justify-between mb-8 font-mono text-3xl border-b-8 border-[#1c1917] pb-6 z-20">
               <div>
-                <p className="font-bold text-[#b73038] mb-2">GUEST</p>
+                <p className="font-bold text-[#b73038] mb-2">{language === 'es' ? 'INVITADO' : 'GUEST'}</p>
                 <p className="font-bold text-[#1c1917]">@{user.username}</p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-[#b73038] mb-2">DATE</p>
+                <p className="font-bold text-[#b73038] mb-2">{language === 'es' ? 'FECHA' : 'DATE'}</p>
                 <p className="font-bold text-[#1c1917]">{new Date().toLocaleDateString()}</p>
               </div>
             </div>

@@ -144,7 +144,7 @@ export function ReviewBuilder({ user }: { user: any }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">Tema del Widget</label>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">{language === 'es' ? 'Tema del Widget' : 'Widget Theme'}</label>
               <div className="flex gap-6 mb-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -154,7 +154,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                     checked={theme === 'modern'} 
                     onChange={() => setTheme('modern')} 
                   />
-                  <span className="text-white text-sm">Moderno</span>
+                  <span className="text-white text-sm">{language === 'es' ? 'Moderno' : 'Modern'}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -164,13 +164,13 @@ export function ReviewBuilder({ user }: { user: any }) {
                     checked={theme === 'retro-ticket'} 
                     onChange={() => setTheme('retro-ticket')} 
                   />
-                  <span className="text-white text-sm">Boleto Retro</span>
+                  <span className="text-white text-sm">{language === 'es' ? 'Boleto Retro' : 'Retro Ticket'}</span>
                 </label>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">Fondo del Widget</label>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">{language === 'es' ? 'Fondo del Widget' : 'Widget Background'}</label>
               <div className="flex gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -180,7 +180,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                     checked={backgroundMode === 'poster'} 
                     onChange={() => setBackgroundMode('poster')} 
                   />
-                  <span className="text-white text-sm">Portada</span>
+                  <span className="text-white text-sm">{language === 'es' ? 'Portada' : 'Poster'}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -190,7 +190,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                     checked={backgroundMode === 'transparent'} 
                     onChange={() => setBackgroundMode('transparent')} 
                   />
-                  <span className="text-white text-sm">Transparente</span>
+                  <span className="text-white text-sm">{language === 'es' ? 'Transparente' : 'Transparent'}</span>
                 </label>
               </div>
             </div>
