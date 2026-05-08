@@ -151,18 +151,18 @@ export function DashboardClient({ user }: { user: any }) {
                   <img src={user.avatar_url} className="w-24 h-24 rounded-full border-4 border-neutral-800 object-cover" />
                   <div>
                     <h3 className="text-2xl font-bold text-white">@{user.username}</h3>
-                    <p className="text-neutral-400">Usuario de MoView</p>
+                    <p className="text-neutral-400">{language === 'es' ? 'Usuario de MoView' : 'MoView User'}</p>
                   </div>
                 </div>
                 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm text-neutral-500 mb-1">Nombre de usuario</label>
+                    <label className="block text-sm text-neutral-500 mb-1">{language === 'es' ? 'Nombre de usuario' : 'Username'}</label>
                     <input type="text" readOnly value={user.username} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-neutral-300 cursor-not-allowed outline-none" />
                   </div>
                   
                   <div className="pt-6 border-t border-neutral-800">
-                    <h4 className="text-lg font-bold mb-4">Seguridad</h4>
+                    <h4 className="text-lg font-bold mb-4">{language === 'es' ? 'Seguridad' : 'Security'}</h4>
                     <form 
                       onSubmit={async (e) => {
                         e.preventDefault();
@@ -170,8 +170,8 @@ export function DashboardClient({ user }: { user: any }) {
                         const password = formData.get('password') as string;
                         const confirmPassword = formData.get('confirmPassword') as string;
                         
-                        if (!password || password.length < 6) return toast.error('Contraseña inválida', { description: 'La contraseña debe tener al menos 6 caracteres' });
-                        if (password !== confirmPassword) return toast.error('Las contraseñas no coinciden', { description: 'Asegúrate de escribir la misma contraseña en ambos campos' });
+                        if (!password || password.length < 6) return toast.error(language === 'es' ? 'Contraseña inválida' : 'Invalid Password', { description: language === 'es' ? 'La contraseña debe tener al menos 6 caracteres' : 'Password must be at least 6 characters long' });
+                        if (password !== confirmPassword) return toast.error(language === 'es' ? 'Las contraseñas no coinciden' : 'Passwords do not match', { description: language === 'es' ? 'Asegúrate de escribir la misma contraseña en ambos campos' : 'Ensure you typed the same password in both fields' });
                         
                         setIsUpdatingPassword(true);
                         try {
@@ -180,9 +180,9 @@ export function DashboardClient({ user }: { user: any }) {
                           const { error } = await supabase.auth.updateUser({ password });
                           
                           if (error) {
-                            toast.error('Error al actualizar', { description: error.message });
+                            toast.error(language === 'es' ? 'Error al actualizar' : 'Update Error', { description: error.message });
                           } else {
-                            toast.success('¡Contraseña actualizada!', { description: 'Tu contraseña se ha cambiado con éxito.' });
+                            toast.success(language === 'es' ? '¡Contraseña actualizada!' : 'Password updated!', { description: language === 'es' ? 'Tu contraseña se ha cambiado con éxito.' : 'Your password has been changed successfully.' });
                             (e.target as HTMLFormElement).reset();
                           }
                         } finally {
@@ -193,22 +193,22 @@ export function DashboardClient({ user }: { user: any }) {
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm text-neutral-500 mb-1">Nueva Contraseña</label>
+                          <label className="block text-sm text-neutral-500 mb-1">{language === 'es' ? 'Nueva Contraseña' : 'New Password'}</label>
                           <input 
                             type="password" 
                             name="password"
-                            placeholder="Mínimo 6 caracteres"
+                            placeholder={language === 'es' ? 'Mínimo 6 caracteres' : 'Minimum 6 characters'}
                             minLength={6}
                             required
                             className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-white focus:border-purple-500 outline-none transition-colors" 
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-neutral-500 mb-1">Confirmar Contraseña</label>
+                          <label className="block text-sm text-neutral-500 mb-1">{language === 'es' ? 'Confirmar Contraseña' : 'Confirm Password'}</label>
                           <input 
                             type="password" 
                             name="confirmPassword"
-                            placeholder="Repite la contraseña"
+                            placeholder={language === 'es' ? 'Repite la contraseña' : 'Repeat password'}
                             minLength={6}
                             required
                             className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-white focus:border-purple-500 outline-none transition-colors" 
@@ -222,7 +222,7 @@ export function DashboardClient({ user }: { user: any }) {
                           type="submit"
                           className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl font-medium transition-colors disabled:opacity-50"
                         >
-                          {isUpdatingPassword ? 'Actualizando...' : 'Cambiar Contraseña'}
+                          {isUpdatingPassword ? (language === 'es' ? 'Actualizando...' : 'Updating...') : (language === 'es' ? 'Cambiar Contraseña' : 'Change Password')}
                         </button>
                       </div>
                     </form>
