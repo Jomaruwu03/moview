@@ -39,7 +39,7 @@ interface ShareWidgetProps {
     avatar_url?: string;
   };
   backgroundMode?: 'poster' | 'dark';
-  theme?: 'modern' | 'retro-ticket';
+  theme?: 'modern' | 'noir-frame';
 }
 
 import { useLanguage } from '@/context/LanguageContext';
