@@ -136,7 +136,10 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                   <img src={avatarBase64} alt={user.username} className="w-full h-full object-cover" />
                 )}
               </div>
-              <p className="font-medium text-2xl">@{user.username} {language === 'es' ? 'vio' : 'watched'}</p>
+              <div className="flex flex-col">
+                <p className="font-medium text-2xl leading-none mb-1">@{user.username} {language === 'es' ? 'vio' : 'watched'}</p>
+                <p className="text-white/50 text-lg leading-none">{new Date().toLocaleDateString()}</p>
+              </div>
             </div>
 
             <div className="w-[440px] h-[660px] rounded-[2rem] overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.8)] mb-12 border-2 border-white/10 bg-neutral-800">
