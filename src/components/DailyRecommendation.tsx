@@ -23,34 +23,49 @@ export function DailyRecommendation({ user }: { user: any }) {
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   };
 
+  const getPersonalIndex = () => {
+    const dayOfYear = getDayOfYear();
+    let hash = 0;
+    const id = user.id || 'default';
+    for (let i = 0; i < id.length; i++) {
+      hash = (hash << 5) - hash + id.charCodeAt(i);
+      hash |= 0;
+    }
+    const userHash = Math.abs(hash);
+    // Usa 137 (primo relativo a 365) para avanzar por todos los días sin repetir
+    return (userHash + dayOfYear * 137) % 365;
+  };
+
   const todayStr = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    // Load watched dates from user_metadata
-    const loadWatchedDates = async () => {
+    const loadData = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (currentUser?.user_metadata?.watched_dates) {
-        setWatchedDates(currentUser.user_metadata.watched_dates);
+      if (currentUser?.user_metadata) {
+        if (currentUser.user_metadata.watched_dates) {
+          setWatchedDates(currentUser.user_metadata.watched_dates);
+        }
+        if (currentUser.user_metadata.last_revealed_date === todayStr) {
+          handleReveal(true);
+        }
       }
     };
-    loadWatchedDates();
-
-    // Check if already revealed today
-    const lastRevealed = localStorage.getItem('daily_revealed_date');
-    if (lastRevealed === todayStr) {
-      handleReveal(true);
-    }
+    loadData();
   }, [supabase.auth]);
 
   const handleReveal = async (isAutoLoad = false) => {
-    if (!isAutoLoad) setIsLoading(true);
+    if (!isAutoLoad) {
+      setIsLoading(true);
+      await supabase.auth.updateUser({
+        data: { last_revealed_date: todayStr }
+      });
+    }
     setIsRevealed(true);
-    if (!isAutoLoad) localStorage.setItem('daily_revealed_date', todayStr);
     
     try {
-      const dayOfYear = getDayOfYear();
-      const page = Math.floor(dayOfYear / 20) + 1;
-      const indexInPage = dayOfYear % 20;
+      const personalIndex = getPersonalIndex();
+      const page = Math.floor(personalIndex / 20) + 1;
+      const indexInPage = personalIndex % 20;
 
       const data = await tmdb.getTopRated(page, language);
       if (data.results && data.results.length > 0) {

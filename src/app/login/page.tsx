@@ -108,10 +108,14 @@ export default function LoginPage() {
       <div className="w-full sm:max-w-md bg-neutral-900/60 backdrop-blur-xl border border-neutral-800 p-8 sm:p-10 rounded-[2rem] shadow-2xl relative">
         <form className="flex flex-col w-full gap-2 text-foreground">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
+            <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
               MoView
             </h1>
-            <p className="text-neutral-400 text-sm">{language === 'es' ? 'Crea tus widgets cinematográficos' : 'Create your cinematic widgets'}</p>
+            <p className="text-neutral-300 text-sm leading-relaxed px-2">
+              {language === 'es' 
+                ? 'Tu espacio personal para reseñar, organizar y descubrir cine. Crea widgets estéticos para tus redes sociales, arma tu Top Personal y acepta el Reto de 365 Días.' 
+                : 'Your personal space to review, organize, and discover cinema. Create aesthetic widgets for social media, build your Personal Top, and take on the 365 Days Challenge.'}
+            </p>
           </div>
           
           <div className="mb-4">
