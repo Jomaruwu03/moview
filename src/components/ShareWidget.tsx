@@ -5,19 +5,27 @@ import { toPng } from 'html-to-image';
 import { Star, Share2 } from 'lucide-react';
 import { tmdb } from '@/lib/tmdb';
 
-// Hook para convertir URLs a Base64 y evitar la corrupción del canvas
 function useImageBase64(url: string | undefined) {
   const [base64, setBase64] = useState<string>('');
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      setBase64('');
+      return;
+    }
     fetch(url, { mode: 'cors' })
-      .then(res => res.blob())
+      .then(res => {
+        if (!res.ok) throw new Error('Network error');
+        return res.blob();
+      })
       .then(blob => {
         const reader = new FileReader();
         reader.onloadend = () => setBase64(reader.result as string);
         reader.readAsDataURL(blob);
       })
-      .catch(err => console.error('Error pre-cargando imagen', err));
+      .catch(err => {
+        console.error('Error pre-cargando imagen', err);
+        setBase64(url); // Fallback a la URL normal si falla la conversión
+      });
   }, [url]);
   return base64;
 }
