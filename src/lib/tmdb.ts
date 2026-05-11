@@ -35,6 +35,27 @@ export const tmdb = {
     });
     return res.json();
   },
+  getTopRated: async (page = 1, lang = 'es') => {
+    const language = lang === 'en' ? 'en-US' : 'es-ES';
+    const res = await fetch(`${BASE_URL}/movie/top_rated?language=${language}&page=${page}`, {
+      headers: {
+        Authorization: `Bearer ${TMDB_API_KEY}`,
+        accept: 'application/json',
+      },
+      next: { revalidate: 86400 },
+    });
+    return res.json();
+  },
+  getMovieProviders: async (id: string) => {
+    const res = await fetch(`${BASE_URL}/movie/${id}/watch/providers`, {
+      headers: {
+        Authorization: `Bearer ${TMDB_API_KEY}`,
+        accept: 'application/json',
+      },
+      next: { revalidate: 86400 },
+    });
+    return res.json();
+  },
   getImageUrl: (path: string, size: 'w500' | 'original' = 'w500') => {
     return path ? `https://image.tmdb.org/t/p/${size}${path}` : '';
   }

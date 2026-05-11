@@ -203,7 +203,7 @@ export function TopMovies({ user }: { user: any }) {
     <div className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-neutral-300">
-          {language === 'es' ? `Tu Top ${favorites.length > 0 ? favorites.length : 5} Películas` : `Your Top ${favorites.length > 0 ? favorites.length : 5} Movies`}
+          {language === 'es' ? 'Tu Top Personal (máximo 5)' : 'Your Personal Top (max 5)'}
         </h2>
         {favorites.length > 0 && (
           <button 
@@ -305,7 +305,7 @@ export function TopMovies({ user }: { user: any }) {
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold">{language === 'es' ? `Añadir al Top ${favorites.length + 1}` : `Add to Top ${favorites.length + 1}`}</h3>
+              <h3 className="font-bold">{language === 'es' ? 'Añadir al Top Personal' : 'Add to Personal Top'}</h3>
               <button onClick={() => setIsAdding(false)}><X className="w-5 h-5 text-neutral-400" /></button>
             </div>
             <div className="relative mb-4">
