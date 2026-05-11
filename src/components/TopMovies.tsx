@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { tmdb } from '@/lib/tmdb';
 import { createClient } from '@/utils/supabase/client';
-import { Search, Plus, X, Share2, Download } from 'lucide-react';
+import { Search, Plus, X, Share2, Download, Cat } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/LanguageContext';
@@ -188,7 +188,7 @@ export function TopMovies({ user }: { user: any }) {
         backgroundColor: '#171717'
       });
       const link = document.createElement('a');
-      link.download = `moview-top-${user.username}.jpg`;
+      link.download = `meowiew-top-${user.username}.jpg`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -202,135 +202,245 @@ export function TopMovies({ user }: { user: any }) {
   };
 
   return (
-    <div className="mb-12">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-neutral-300">
-          {language === 'es' ? 'Tu Top Personal (máximo 5)' : 'Your Personal Top (max 5)'}
-        </h2>
+    <div className="mb-16">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div>
+          <span className="font-body text-xs uppercase tracking-[0.3em] text-primary mb-2 block">{language === 'es' ? 'Tu Selección' : 'Your Selection'}</span>
+          <h2 className="font-display text-4xl md:text-5xl italic text-white">
+            {language === 'es' ? 'Tu Selección Editorial' : 'Your Editorial Selection'}
+          </h2>
+        </div>
         {favorites.length > 0 && (
           <button 
             onClick={exportAsImage}
             disabled={isExporting}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white text-sm font-medium py-2 px-4 rounded-xl transition-all shadow-lg"
+            className="px-8 py-3 border-[0.5px] border-primary/40 font-body text-[10px] uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(236,178,255,0.2)] transition-all duration-500 cubic-out flex items-center gap-3 w-fit"
           >
             {isExporting ? <Download className="w-4 h-4 animate-bounce" /> : <Share2 className="w-4 h-4" />}
-            {isExporting ? (language === 'es' ? 'Generando...' : 'Generating...') : (language === 'es' ? 'Compartir Top' : 'Share Top')}
+            {isExporting ? (language === 'es' ? 'Preparando...' : 'Preparing...') : (language === 'es' ? 'Exportar Editorial' : 'Export Editorial')}
           </button>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8">
         {favorites.map((movie, index) => (
-          <div key={index} className="relative w-28 h-40 md:w-36 md:h-52 flex-shrink-0 group">
-            <img 
-              src={tmdb.getImageUrl(movie.poster_path, 'w500')} 
-              alt={movie.title}
-              className="w-full h-full object-cover rounded-xl border border-neutral-800 shadow-lg"
-            />
-            <div className="absolute top-2 left-2 bg-black/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-white/20">
-              {index + 1}
+          <div 
+            key={movie.id} 
+            className={`relative group animate-in fade-in slide-in-from-bottom-8 duration-700 cubic-out`}
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <div className="relative aspect-[2/3] overflow-hidden rounded-[2rem] border border-white/5 shadow-2xl transition-all duration-700 cubic-out group-hover:border-primary/30 group-hover:shadow-[0_30px_60px_rgba(0,0,0,0.6)] group-hover:-translate-y-2">
+              <img 
+                src={tmdb.getImageUrl(movie.poster_path, 'w500')} 
+                alt={movie.title}
+                className="w-full h-full object-cover transition-transform duration-[1500ms] cubic-out group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+              
+              <div className="absolute top-6 left-6 flex flex-col">
+                <span className="font-display text-4xl italic text-primary/40 group-hover:text-primary transition-colors leading-none">
+                  0{index + 1}
+                </span>
+                <div className="w-8 h-[1px] bg-primary/20 mt-2"></div>
+              </div>
+
+              <div className="absolute bottom-6 left-6 right-6">
+                <p className="font-display text-xl text-white italic leading-tight mb-1">{movie.title}</p>
+                <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant opacity-60">
+                  {movie.release_date?.split('-')[0]}
+                </p>
+              </div>
+
+              <button 
+                onClick={() => removeFavorite(index)}
+                className="absolute top-6 right-6 p-2 glass-card border border-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20 hover:text-red-500 hover:rotate-90"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <button 
-              onClick={() => removeFavorite(index)}
-              className="absolute -top-2 -right-2 bg-neutral-900 border border-neutral-700 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 hover:text-red-500"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
         ))}
 
         {favorites.length < 5 && (
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="w-28 h-40 md:w-36 md:h-52 border-2 border-dashed border-neutral-800 hover:border-purple-500 rounded-xl flex flex-col items-center justify-center bg-neutral-900/30 hover:bg-neutral-800/50 transition-colors text-neutral-500 hover:text-white group"
-          >
-            <Plus className="w-8 h-8 mb-2 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-medium text-center px-2">{language === 'es' ? 'Añadir Película' : 'Add Movie'}</span>
-          </button>
+          <div className="relative animate-in fade-in zoom-in-95 duration-700">
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="w-full aspect-[2/3] border-[0.5px] border-dashed border-white/10 hover:border-primary/40 rounded-[2rem] flex flex-col items-center justify-center bg-white/[0.02] hover:bg-primary/[0.03] transition-all duration-700 group overflow-hidden relative"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(236,178,255,0.03),_transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              
+              <div className="metallic-plate p-5 rounded-full mb-4 group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(236,178,255,0.1)] transition-all duration-500 relative z-10">
+                <Plus className="w-6 h-6 text-on-surface-variant group-hover:text-primary transition-colors" />
+              </div>
+              
+              <div className="text-center relative z-10">
+                <span className="font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant group-hover:text-primary transition-colors block mb-1">
+                  {language === 'es' ? 'Añadir' : 'Add'}
+                </span>
+                <span className="font-display italic text-lg text-white/20 group-hover:text-white/40 transition-colors">
+                  {language === 'es' ? 'Siguiente Obra' : 'Next Masterpiece'}
+                </span>
+              </div>
+
+              <div className="absolute -bottom-4 -right-4 font-display text-[120px] italic text-white/[0.02] group-hover:text-primary/[0.03] transition-colors leading-none select-none">
+                0{favorites.length + 1}
+              </div>
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Tarjeta Oculta para Exportar - Uso de Fixed off-screen para evitar que rompa el layout */}
+      {/* Tarjeta Oculta para Exportar - Rediseño Editorial */}
       <div className="fixed top-[-9999px] left-[-9999px] pointer-events-none">
         <div 
           ref={exportRef} 
-          className="w-[1200px] h-[800px] flex items-center justify-center bg-neutral-900 overflow-hidden relative font-sans"
+          className="w-[1200px] h-[1600px] bg-black p-24 flex flex-col font-sans relative overflow-hidden"
+          style={{ backgroundColor: '#000000' }}
         >
-          {/* Fondo estilo ReviewBuilder */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/90 z-0"></div>
-          {favorites.length > 0 && base64Images[favorites[0].id] && (
-            <img 
-              src={base64Images[favorites[0].id]} 
-              className="absolute inset-0 w-full h-full object-cover opacity-30 blur-2xl transform scale-110" 
-            />
-          )}
+          {/* Fondo sutil con gradiente y textura */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(236,178,255,0.05),_transparent_70%)]"></div>
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
 
-          <div className="bg-black/60 border border-white/10 rounded-[3rem] p-12 w-[1000px] flex flex-col items-center text-white relative z-10 shadow-[0_40px_80px_rgba(0,0,0,0.8)]">
-            <div className="flex items-center justify-between w-full mb-12">
-              <div className="flex items-center gap-6 bg-white/10 px-8 py-4 rounded-full border border-white/5">
-                <div className="w-16 h-16 rounded-full bg-neutral-800 overflow-hidden border-2 border-neutral-600">
-                  {avatarBase64 && <img src={avatarBase64} alt={user.username} className="w-full h-full object-cover" />}
-                </div>
-                <div>
-                  <p className="text-white/60 text-sm uppercase tracking-widest font-bold">{language === 'es' ? `Top ${favorites.length} Seleccionado por` : `Top ${favorites.length} Selected by`}</p>
-                  <p className="font-medium text-2xl">@{user.username}</p>
-                </div>
-              </div>
-              <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-                MoView
+          {/* Header Editorial */}
+          <div className="relative z-10 flex justify-between items-start mb-32">
+            <div>
+              <p className="font-body text-primary tracking-[0.4em] uppercase text-xl mb-4">Editorial Selection</p>
+              <h1 className="font-display text-[120px] text-white leading-none italic">
+                The Essential <br />
+                <span className="text-primary">Five.</span>
               </h1>
             </div>
-
-            <div className="flex gap-6 justify-center items-end w-full mb-8">
-              {favorites.map((movie, i) => (
-                <div key={i} className="flex flex-col items-center gap-6">
-                  <div className="relative w-[160px] h-[240px] rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] border-2 border-white/10 bg-neutral-800 transform hover:scale-105 transition-transform">
-                    {base64Images[movie.id] && (
-                      <img src={base64Images[movie.id]} className="w-full h-full object-cover" />
-                    )}
-                  </div>
-                  <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center font-black text-xl text-white shadow-lg backdrop-blur-md">
-                    {i + 1}
-                  </div>
-                </div>
-              ))}
+            <div className="text-right">
+              <div className="flex items-center gap-2 mb-2">
+                <Cat className="w-6 h-6 text-white" />
+                <div className="font-display text-4xl text-white italic">MeoWiew</div>
+              </div>
+              <p className="font-body text-white/40 tracking-[0.2em] uppercase text-sm">Issue No. 01 — 2024</p>
             </div>
+          </div>
 
-            <div className="mt-8 pt-8 border-t-2 border-white/10 w-full text-center">
-              <p className="text-white/40 font-bold tracking-[0.3em] text-xl">{language === 'es' ? 'DESCUBRE PELÍCULAS EN MOVIEW' : 'DISCOVER MOVIES ON MOVIEW'}</p>
+          {/* Grid Asimétrico */}
+          <div className="relative z-10 flex-1 grid grid-cols-12 grid-rows-6 gap-12">
+            {/* Película 1 - Grande Izquierda */}
+            {favorites[0] && (
+              <div className="col-span-8 row-span-3 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+                <img src={base64Images[favorites[0].id]} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute bottom-12 left-12">
+                  <span className="font-display text-[100px] text-primary/40 italic leading-none mb-4 block">01</span>
+                  <h2 className="font-display text-6xl text-white italic">{favorites[0].title}</h2>
+                </div>
+              </div>
+            )}
+
+            {/* Película 2 - Derecha Superior */}
+            {favorites[1] && (
+              <div className="col-span-4 row-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl mt-12">
+                <img src={base64Images[favorites[1].id]} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute bottom-8 left-8">
+                  <span className="font-display text-6xl text-primary/40 italic leading-none mb-2 block">02</span>
+                  <h2 className="font-display text-3xl text-white italic">{favorites[1].title}</h2>
+                </div>
+              </div>
+            )}
+
+            {/* Película 3 - Derecha Inferior (Pequeña) */}
+            {favorites[2] && (
+              <div className="col-span-4 row-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+                <img src={base64Images[favorites[2].id]} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute bottom-8 left-8">
+                  <span className="font-display text-6xl text-primary/40 italic leading-none mb-2 block">03</span>
+                  <h2 className="font-display text-3xl text-white italic">{favorites[2].title}</h2>
+                </div>
+              </div>
+            )}
+
+            {/* Película 4 - Izquierda Inferior */}
+            {favorites[3] && (
+              <div className="col-span-5 row-span-3 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl -mt-12">
+                <img src={base64Images[favorites[3].id]} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute bottom-12 left-12">
+                  <span className="font-display text-[80px] text-primary/40 italic leading-none mb-4 block">04</span>
+                  <h2 className="font-display text-4xl text-white italic">{favorites[3].title}</h2>
+                </div>
+              </div>
+            )}
+
+            {/* Película 5 - Derecha Media */}
+            {favorites[4] && (
+              <div className="col-span-7 row-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+                <img src={base64Images[favorites[4].id]} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute bottom-12 left-12">
+                  <span className="font-display text-[80px] text-primary/40 italic leading-none mb-4 block">05</span>
+                  <h2 className="font-display text-4xl text-white italic">{favorites[4].title}</h2>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Editorial */}
+          <div className="relative z-10 mt-24 pt-12 border-t border-white/10 flex justify-between items-center">
+            <div className="flex items-center gap-8">
+              <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 overflow-hidden">
+                {avatarBase64 && <img src={avatarBase64} className="w-full h-full object-cover" />}
+              </div>
+              <div>
+                <p className="font-body text-white/40 tracking-widest uppercase text-xs mb-1">Curated by</p>
+                <p className="font-display text-3xl text-white italic">@{user.username}</p>
+              </div>
+            </div>
+            <div className="font-body text-white/20 tracking-[0.5em] uppercase text-sm italic">
+              Cinematic Noir Experience
             </div>
           </div>
         </div>
       </div>
 
       {isAdding && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold">{language === 'es' ? 'Añadir al Top Personal' : 'Add to Personal Top'}</h3>
-              <button onClick={() => setIsAdding(false)}><X className="w-5 h-5 text-neutral-400" /></button>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-500">
+          <div className="glass-card border border-white/10 p-8 rounded-3xl w-full max-w-xl shadow-[0_40px_80px_rgba(0,0,0,0.8)]">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <span className="font-body text-[10px] uppercase tracking-[0.2em] text-primary mb-1 block">{language === 'es' ? 'Búsqueda' : 'Search'}</span>
+                <h3 className="font-display text-2xl italic text-white">{language === 'es' ? 'Añadir a tu Selección' : 'Add to your Selection'}</h3>
+              </div>
+              <button onClick={() => setIsAdding(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5 text-on-surface-variant" /></button>
             </div>
-            <div className="relative mb-4">
+            <div className="relative mb-8">
               <input 
                 type="text" autoFocus
                 value={query} onChange={e => setQuery(e.target.value)}
                 placeholder={t('search.placeholder')}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 outline-none focus:border-purple-500"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 font-body text-sm text-white outline-none focus:border-primary/40 focus:bg-white/10 transition-all"
               />
-              <Search className="absolute right-3 top-3 w-5 h-5 text-neutral-400" />
+              <Search className="absolute left-4 top-4 w-5 h-5 text-on-surface-variant" />
             </div>
-            <div className="max-h-60 overflow-y-auto flex flex-col gap-2">
-              {results.map(m => (
-                <button key={m.id} onClick={() => handleSelectMovie(m)} className="flex gap-3 text-left p-2 hover:bg-neutral-800 rounded-lg">
-                  {m.poster_path ? (
-                    <img src={tmdb.getImageUrl(m.poster_path, 'w500')} className="w-10 h-14 object-cover rounded" />
-                  ) : <div className="w-10 h-14 bg-neutral-800 rounded" />}
+            <div className="max-h-80 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+              {results.length > 0 ? results.map(m => (
+                <button 
+                  key={m.id} 
+                  onClick={() => handleSelectMovie(m)} 
+                  className="flex items-center gap-4 text-left p-3 hover:bg-white/5 rounded-2xl w-full transition-all border border-transparent hover:border-white/5 group"
+                >
+                  <div className="w-12 h-18 relative flex-shrink-0">
+                    {m.poster_path ? (
+                      <img src={tmdb.getImageUrl(m.poster_path, 'w500')} className="w-full h-full object-cover rounded-lg" />
+                    ) : (
+                      <div className="w-full h-full bg-white/5 rounded-lg flex items-center justify-center"><Plus className="w-4 h-4 text-white/10" /></div>
+                    )}
+                  </div>
                   <div>
-                    <p className="font-bold text-sm line-clamp-1">{m.title}</p>
-                    <p className="text-xs text-neutral-500">{m.release_date?.split('-')[0]}</p>
+                    <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{m.title}</p>
+                    <p className="font-body text-xs text-on-surface-variant">{m.release_date?.split('-')[0]}</p>
                   </div>
                 </button>
-              ))}
+              )) : query.length > 2 ? (
+                <p className="text-center py-8 font-body text-xs uppercase tracking-widest text-on-surface-variant opacity-50">{language === 'es' ? 'No se encontraron resultados' : 'No results found'}</p>
+              ) : null}
             </div>
           </div>
         </div>

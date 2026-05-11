@@ -17,7 +17,7 @@ export function ReviewBuilder({ user }: { user: any }) {
   const [reviewText, setReviewText] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [backgroundMode, setBackgroundMode] = useState<'poster' | 'dark'>('poster');
-  const [theme, setTheme] = useState<'modern' | 'retro-ticket'>('modern');
+  const [theme, setTheme] = useState<'modern' | 'noir-frame'>('modern');
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -41,84 +41,90 @@ export function ReviewBuilder({ user }: { user: any }) {
   }, [query, language]);
 
   return (
-    <div className="grid lg:grid-cols-2 gap-12 items-start w-full">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-        <h2 className="text-2xl font-bold mb-6">{language === 'es' ? 'Nueva Reseña' : 'New Review'}</h2>
+    <div className="grid lg:grid-cols-2 gap-16 items-start w-full mb-24">
+      <div className="glass-card border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl">
+        <div className="mb-10">
+          <span className="font-body text-[10px] uppercase tracking-[0.3em] text-primary mb-2 block">{language === 'es' ? 'Creador' : 'Creator'}</span>
+          <h2 className="font-display text-4xl italic text-white">{language === 'es' ? 'Nueva Reseña' : 'New Review'}</h2>
+        </div>
         
         {!selectedMovie ? (
-          <div className="space-y-4">
-            <div className="relative flex gap-2">
+          <div className="space-y-6">
+            <div className="relative group">
               <input 
                 type="text" 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t('search.placeholder')} 
-                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white outline-none focus:border-purple-500"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 pl-14 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500"
               />
-              <div className="absolute right-3 top-3 text-neutral-400">
+              <div className="absolute left-5 top-5 text-on-surface-variant group-focus-within:text-primary transition-colors">
                 <Search className="w-5 h-5" />
               </div>
             </div>
 
-            {isSearching && <p className="text-sm text-neutral-500">{language === 'es' ? 'Buscando...' : 'Searching...'}</p>}
-            {!isSearching && query.trim() && results.length === 0 && (
-              <p className="text-sm text-neutral-500">{t('search.no_results')}</p>
-            )}
+            {isSearching && <p className="font-body text-[10px] uppercase tracking-widest text-primary animate-pulse ml-2">{language === 'es' ? 'Buscando en el archivo...' : 'Searching archives...'}</p>}
 
-            <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto">
+            <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
               {results.map(movie => (
                 <button 
                   key={movie.id}
                   onClick={() => setSelectedMovie(movie)}
-                  className="flex gap-4 p-2 hover:bg-neutral-800 rounded-lg text-left transition"
+                  className="flex items-center gap-5 p-3 hover:bg-white/5 rounded-2xl text-left transition-all duration-500 border border-transparent hover:border-white/5 group w-full"
                 >
-                  {movie.poster_path ? (
-                    <img src={tmdb.getImageUrl(movie.poster_path, 'w500')} className="w-12 h-16 object-cover rounded" />
-                  ) : (
-                    <div className="w-12 h-16 bg-neutral-800 rounded"></div>
-                  )}
+                  <div className="w-14 h-20 relative flex-shrink-0 overflow-hidden rounded-lg shadow-lg border border-white/5">
+                    {movie.poster_path ? (
+                      <img src={tmdb.getImageUrl(movie.poster_path, 'w500')} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    ) : (
+                      <div className="w-full h-full bg-surface-variant flex items-center justify-center"><Star className="w-4 h-4 text-white/10" /></div>
+                    )}
+                  </div>
                   <div>
-                    <p className="font-bold">{movie.title}</p>
-                    <p className="text-sm text-neutral-400">{movie.release_date?.split('-')[0]}</p>
+                    <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{movie.title}</p>
+                    <p className="font-body text-xs text-on-surface-variant">{movie.release_date?.split('-')[0]}</p>
                   </div>
                 </button>
               ))}
               {!isSearching && query.trim() !== '' && results.length === 0 && (
-                <p className="text-sm text-neutral-500 p-2">No se encontraron películas.</p>
+                <div className="text-center py-12 opacity-40">
+                  <p className="font-body text-xs uppercase tracking-[0.2em]">{language === 'es' ? 'Sin hallazgos' : 'No findings'}</p>
+                </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="flex gap-4 items-center justify-between bg-neutral-950 p-4 rounded-lg">
-              <div className="flex gap-4 items-center">
-                <img 
-                  src={tmdb.getImageUrl(selectedMovie.poster_path, 'w500')} 
-                  alt="Poster" 
-                  className="w-16 rounded-md shadow-lg"
-                />
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 cubic-out">
+            <div className="flex items-center justify-between glass-card border border-white/5 p-5 rounded-2xl">
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-24 overflow-hidden rounded-xl shadow-xl border border-white/10">
+                  <img 
+                    src={tmdb.getImageUrl(selectedMovie.poster_path, 'w500')} 
+                    alt="Poster" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div>
-                  <h3 className="text-lg font-bold">{selectedMovie.title}</h3>
-                  <p className="text-neutral-500 text-sm">{selectedMovie.release_date?.split('-')[0]}</p>
+                  <h3 className="font-display text-xl text-white italic">{selectedMovie.title}</h3>
+                  <p className="font-body text-xs text-on-surface-variant uppercase tracking-widest mt-1">{selectedMovie.release_date?.split('-')[0]}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedMovie(null)}
-                className="text-sm text-neutral-400 hover:text-white underline"
+                className="font-body text-[10px] uppercase tracking-widest text-primary/60 hover:text-primary transition-colors border-b border-primary/20"
               >
-                Cambiar
+                {language === 'es' ? 'Cambiar' : 'Change'}
               </button>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">{language === 'es' ? 'Calificación' : 'Rating'}</label>
-              <div className="flex gap-2">
+            <div className="space-y-4">
+              <label className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">{language === 'es' ? 'Calificación' : 'Rating'}</label>
+              <div className="flex gap-4 items-center">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <div key={star} className="relative w-8 h-8 cursor-pointer">
-                    <Star className="w-8 h-8 text-neutral-600" />
+                  <div key={star} className="relative w-10 h-10 cursor-pointer group/star">
+                    <Star className="w-10 h-10 text-white/5 transition-colors group-hover/star:text-white/10" />
                     {(rating >= star - 0.5) && (
                       <div className={`absolute top-0 left-0 h-full overflow-hidden pointer-events-none ${rating >= star ? 'w-full' : 'w-[50%]'}`}>
-                        <Star className="w-8 h-8 max-w-none text-yellow-500 fill-yellow-500 drop-shadow-lg" />
+                        <Star className="w-10 h-10 max-w-none text-primary fill-primary shadow-[0_0_20px_rgba(236,178,255,0.4)]" />
                       </div>
                     )}
                     <div className="absolute inset-0 flex">
@@ -127,96 +133,95 @@ export function ReviewBuilder({ user }: { user: any }) {
                     </div>
                   </div>
                 ))}
+                <span className="font-display text-3xl text-primary italic ml-4">{rating.toFixed(1)}</span>
               </div>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">{language === 'es' ? 'Tu opinión (opcional)' : 'Your opinion (optional)'}</label>
-              <textarea 
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all resize-none"
-                rows={3}
-                maxLength={50}
-                placeholder={language === 'es' ? '¿Qué te pareció la película? (Sé breve)' : 'What did you think of the movie? (Keep it short)'}
-              />
-              <p className="text-right text-xs text-neutral-500 mt-1">{reviewText.length}/50 {language === 'es' ? 'caracteres' : 'characters'}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">{language === 'es' ? 'Tema del Widget' : 'Widget Theme'}</label>
-              <div className="flex gap-6 mb-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="themeMode"
-                    className="accent-purple-500"
-                    checked={theme === 'modern'} 
-                    onChange={() => setTheme('modern')} 
-                  />
-                  <span className="text-white text-sm">{language === 'es' ? 'Moderno' : 'Modern'}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="themeMode"
-                    className="accent-purple-500"
-                    checked={theme === 'retro-ticket'} 
-                    onChange={() => setTheme('retro-ticket')} 
-                  />
-                  <span className="text-white text-sm">{language === 'es' ? 'Boleto Retro' : 'Retro Ticket'}</span>
-                </label>
+            <div className="space-y-4">
+              <label className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">{language === 'es' ? 'Tu Crítica' : 'Your Critique'}</label>
+              <div className="relative">
+                <textarea 
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-body text-sm focus:border-primary/40 focus:bg-white/10 outline-none transition-all duration-500 resize-none h-32"
+                  maxLength={50}
+                  placeholder={language === 'es' ? 'Escribe tu veredicto...' : 'Write your verdict...'}
+                />
+                <div className="absolute bottom-4 right-4 font-body text-[10px] text-on-surface-variant opacity-50 tracking-widest">
+                  {reviewText.length}/50
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">{language === 'es' ? 'Fondo del Widget' : 'Widget Background'}</label>
-              <div className="flex gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="bgMode"
-                    className="accent-purple-500"
-                    checked={backgroundMode === 'poster'} 
-                    onChange={() => setBackgroundMode('poster')} 
-                  />
-                  <span className="text-white text-sm">{language === 'es' ? 'Portada' : 'Poster'}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="bgMode"
-                    className="accent-purple-500"
-                    checked={backgroundMode === 'dark'} 
-                    onChange={() => setBackgroundMode('dark')} 
-                  />
-                  <span className="text-white text-sm">{language === 'es' ? 'Oscuro' : 'Dark'}</span>
-                </label>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <label className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">{language === 'es' ? 'Estética' : 'Aesthetic'}</label>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { id: 'modern', label: language === 'es' ? 'Editorial' : 'Editorial' },
+                    { id: 'noir-frame', label: language === 'es' ? 'Noir Frame' : 'Noir Frame' }
+                  ].map((item) => (
+                    <button 
+                      key={item.id}
+                      onClick={() => setTheme(item.id as any)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-500 font-body text-[11px] uppercase tracking-widest ${theme === item.id ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant hover:bg-white/10'}`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${theme === item.id ? 'bg-primary shadow-[0_0_8px_rgba(236,178,255,0.8)]' : 'bg-white/20'}`}></div>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">{language === 'es' ? 'Fondo' : 'Background'}</label>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { id: 'poster', label: language === 'es' ? 'Portada' : 'Poster' },
+                    { id: 'dark', label: language === 'es' ? 'Noir' : 'Noir' }
+                  ].map((item) => (
+                    <button 
+                      key={item.id}
+                      onClick={() => setBackgroundMode(item.id as any)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-500 font-body text-[11px] uppercase tracking-widest ${backgroundMode === item.id ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant hover:bg-white/10'}`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${backgroundMode === item.id ? 'bg-primary shadow-[0_0_8px_rgba(236,178,255,0.8)]' : 'bg-white/20'}`}></div>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col items-center w-full">
-        <h2 className="text-2xl font-bold mb-6 text-center w-full">{language === 'es' ? 'Vista Previa' : 'Preview'}</h2>
-        <div className="w-full flex justify-center">
+      <div className="flex flex-col items-center w-full sticky top-32">
+        <div className="mb-10 w-full">
+          <span className="font-body text-[10px] uppercase tracking-[0.3em] text-primary mb-2 block">{language === 'es' ? 'Resultado' : 'Outcome'}</span>
+          <h2 className="font-display text-4xl italic text-white">{language === 'es' ? 'Vista Previa' : 'Preview'}</h2>
+        </div>
+        <div className="w-full flex justify-center perspective-1000">
           {selectedMovie ? (
-            <ShareWidget 
-              movie={selectedMovie} 
-              rating={rating} 
-              reviewText={reviewText} 
-              user={user} 
-              backgroundMode={backgroundMode}
-              theme={theme}
-            />
+            <div className="transform hover:rotate-y-2 transition-transform duration-[1500ms] cubic-out">
+              <ShareWidget 
+                movie={selectedMovie} 
+                rating={rating} 
+                reviewText={reviewText} 
+                user={user} 
+                backgroundMode={backgroundMode}
+                theme={theme}
+              />
+            </div>
           ) : (
-            <div className="relative w-full h-[600px] sm:h-[800px] lg:h-[900px] flex justify-center overflow-hidden">
-              <div className="absolute top-0 origin-top transform scale-[0.3] sm:scale-[0.4] lg:scale-[0.45]">
-                <div className="w-[1080px] h-[1920px] bg-neutral-900 border border-neutral-800 rounded-3xl flex items-center justify-center text-neutral-500 text-3xl font-bold shadow-2xl">
-                  {language === 'es' ? 'Selecciona una película para ver el widget' : 'Select a movie to preview the widget'}
-                </div>
+            <div className="w-full max-w-[450px] aspect-[9/16] glass-card border border-white/10 rounded-3xl flex flex-col items-center justify-center p-12 text-center relative overflow-hidden group">
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <div className="metallic-plate p-6 rounded-full mb-8 relative z-10 opacity-30">
+                <Star className="w-12 h-12 text-on-surface-variant" />
               </div>
+              <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant leading-relaxed relative z-10 max-w-[200px]">
+                {language === 'es' ? 'Selecciona una película para revelar el diseño editorial' : 'Select a movie to reveal the editorial design'}
+              </p>
             </div>
           )}
         </div>

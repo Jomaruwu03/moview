@@ -3,22 +3,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | MoView",
-    default: "MoView - Generador de Widgets de Cine",
+    template: "%s | MeoWiew",
+    default: "MeoWiew - Generador de Widgets de Cine",
   },
   description: "Crea y comparte widgets cinematográficos hermosos de tus películas favoritas. Diseños modernos y retro para redes sociales.",
-  keywords: ["cine", "películas", "widgets", "reseñas", "reviews", "compartir", "instagram", "twitter", "moview"],
+  keywords: ["cine", "películas", "widgets", "reseñas", "reviews", "compartir", "instagram", "twitter", "meowiew"],
   authors: [{ name: "Jomaru" }],
   openGraph: {
-    title: "MoView - Generador de Widgets de Cine",
+    title: "MeoWiew - Generador de Widgets de Cine",
     description: "Crea y comparte widgets cinematográficos hermosos de tus películas favoritas.",
-    url: "https://moview.vercel.app", // Adjust if your domain is different
-    siteName: "MoView",
+    url: "https://meowiew.vercel.app",
+    siteName: "MeoWiew",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MoView - Generador de Widgets de Cine",
+    title: "MeoWiew - Generador de Widgets de Cine",
     description: "Crea y comparte widgets cinematográficos hermosos de tus películas favoritas.",
   },
   robots: {
@@ -36,7 +36,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="en">
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Geist:wght@100..900&display=swap" rel="stylesheet" />
+      </head>
       <body>
         <LanguageProvider>
           {children}
