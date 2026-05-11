@@ -1,6 +1,6 @@
-# MoView
+# MeoWiew 🐈
 
-> An interactive web application designed for film enthusiasts. Generate high-fidelity graphical widgets (such as a retro cinema ticket or a modern glassmorphism card) perfectly sized for sharing your movie reviews on social media.
+> An interactive cinematic experience for film enthusiasts. Generate high-fidelity editorial widgets in a **Cinematic Noir** style, perfectly sized for sharing your movie critiques on social media.
 
 ---
 
@@ -17,10 +17,12 @@
 
 | Feature | Description |
 |---|---|
-| **Movie Search** | Fast and accurate movie retrieval powered by the TMDB API. |
-| **Custom Widgets** | Generate stylized review cards in different aesthetic themes (Modern, Retro Ticket). |
-| **Responsive Export** | Exports high-quality images (1080x1920) optimized for platforms like Instagram Stories. |
-| **Authentication** | Secure user login and registration powered by Supabase. |
+| **Editorial Search** | Fast and accurate movie retrieval powered by the TMDB API. |
+| **Cinematic Widgets** | Generate high-end review cards in premium themes (**Editorial**, **Noir Frame**). |
+| **Top Selection** | A dynamic, progressive interface to build your editorial Top 5 movies. |
+| **Bilingual Interface** | Seamlessly switch between Spanish and English. |
+| **High-Res Export** | Exports 1080x1920 images optimized for Instagram Stories. |
+| **Open Source** | A free, open platform for cinema lovers. |
 
 ##  Setup and Installation
 
@@ -36,7 +38,7 @@ npm install
 ```
 
 ### 3. Environment Variables
-Create a `.env.local` file in the root directory and add your required keys:
+Create a `.env.local` file in the root directory:
 | Variable | Description |
 |---|---|
 | `NEXT_PUBLIC_TMDB_API_KEY` | Your TMDB API Key |
@@ -50,13 +52,11 @@ npm run dev
 
 > **Disclaimer:** This product uses the TMDB API but is not endorsed or certified by TMDB.
 
-<br>
-
 ---
 
-# MoView (Español)
+# MeoWiew (Español) 🐈
 
-> Una aplicación web interactiva diseñada para entusiastas del cine. Genera widgets gráficos de alta fidelidad (como un boleto de cine retro o una tarjeta moderna) con un tamaño optimizado para compartir tus reseñas en redes sociales.
+> Una experiencia cinematográfica interactiva para entusiastas del cine. Genera widgets editoriales de alta fidelidad con un estilo **Cinematic Noir**, optimizados para compartir tus críticas en redes sociales.
 
 ---
 
@@ -64,10 +64,12 @@ npm run dev
 
 | Característica | Descripción |
 |---|---|
-| **Búsqueda de Películas** | Búsqueda rápida y precisa impulsada por la API de TMDB. |
-| **Widgets Personalizados** | Genera tarjetas de reseñas estilizadas en diferentes temas estéticos (Moderno, Boleto Retro). |
-| **Exportación Responsiva** | Exporta imágenes de alta calidad (1080x1920) optimizadas para Instagram Stories. |
-| **Autenticación** | Inicio de sesión y registro seguros a través de Supabase. |
+| **Búsqueda Editorial** | Búsqueda rápida y precisa impulsada por la API de TMDB. |
+| **Widgets Cinematográficos** | Genera tarjetas de reseñas premium en temas exclusivos (**Editorial**, **Noir Frame**). |
+| **Selección Top** | Interfaz dinámica y progresiva para construir tu Top 5 editorial. |
+| **Interfaz Bilingüe** | Cambia fluidamente entre español e inglés. |
+| **Exportación en Alta Res** | Exporta imágenes (1080x1920) optimizadas para Instagram Stories. |
+| **Código Abierto** | Una plataforma gratuita y abierta para los amantes del cine. |
 
 ##  Configuración e Instalación
 
@@ -83,7 +85,7 @@ npm install
 ```
 
 ### 3. Variables de Entorno
-Crea un archivo `.env.local` en la raíz del proyecto y añade tus credenciales:
+Crea un archivo `.env.local` en la raíz del proyecto:
 | Variable | Descripción |
 |---|---|
 | `NEXT_PUBLIC_TMDB_API_KEY` | Tu API Key de TMDB |
@@ -96,4 +98,3 @@ npm run dev
 ```
 
 > **Aviso Legal:** Este producto utiliza la API de TMDB pero no está respaldado ni certificado por TMDB.
-
