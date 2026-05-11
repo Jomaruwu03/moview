@@ -146,23 +146,24 @@ export function DailyRecommendation({ user }: { user: any }) {
     }
     
     return (
-      <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-6 text-purple-400">
-          <CalendarIcon className="w-6 h-6" />
-          <h3 className="text-xl font-bold text-white">
+      <div className="glass-card border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center gap-3 mb-6 text-primary">
+          <CalendarIcon className="w-5 h-5" />
+          <h3 className="font-display text-xl italic text-white">
             {new Intl.DateTimeFormat(language === 'es' ? 'es-ES' : 'en-US', { month: 'long', year: 'numeric' }).format(today)}
           </h3>
         </div>
-        <div className="grid grid-cols-7 gap-2 md:gap-4 text-center mb-2">
+        <div className="grid grid-cols-7 gap-2 md:gap-4 text-center mb-4">
           {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map((d, idx) => (
-            <div key={idx} className="text-xs text-neutral-500 font-bold">{d}</div>
+            <div key={idx} className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-2 md:gap-4">
           {days}
         </div>
-        <div className="mt-6 flex items-center justify-between text-sm">
-          <span className="text-neutral-400">{language === 'es' ? 'Racha actual:' : 'Current streak:'} <strong className="text-white">{watchedDates.length}</strong> {language === 'es' ? 'días' : 'days'}</span>
+        <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between font-body text-xs uppercase tracking-widest">
+          <span className="text-on-surface-variant">{language === 'es' ? 'Racha:' : 'Streak:'} <strong className="text-primary">{watchedDates.length}</strong></span>
+          <span className="text-on-surface-variant">{((watchedDates.length / 365) * 100).toFixed(1)}%</span>
         </div>
       </div>
     );
@@ -176,69 +177,74 @@ export function DailyRecommendation({ user }: { user: any }) {
       {/* Movie of the Day Card or Reveal Button */}
       <div className="lg:col-span-2 space-y-6">
         {!isRevealed ? (
-          <div className="flex flex-col items-center justify-center bg-neutral-900 border border-neutral-800 rounded-3xl p-12 text-center h-full min-h-[400px]">
-            <div className="bg-purple-500/10 p-6 rounded-full mb-6">
-              <Sparkles className="w-16 h-16 text-purple-400" />
+          <div className="flex flex-col items-center justify-center glass-card border border-white/10 rounded-3xl p-12 text-center h-full min-h-[500px] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <div className="metallic-plate p-6 rounded-full mb-8 relative z-10">
+              <Sparkles className="w-16 h-16 text-primary" />
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
-              {language === 'es' ? 'Tu Película Diaria te Espera' : 'Your Daily Movie Awaits'}
+            <span className="font-body text-xs uppercase tracking-[0.3em] text-primary mb-4 relative z-10">{language === 'es' ? 'Misterio Diario' : 'Daily Mystery'}</span>
+            <h3 className="font-display text-4xl md:text-5xl italic text-white mb-6 relative z-10">
+              {language === 'es' ? 'Tu Obra Maestra del Día' : 'Your Masterpiece of the Day'}
             </h3>
-            <p className="text-neutral-400 mb-8 max-w-md mx-auto">
+            <p className="font-body text-on-surface-variant mb-10 max-w-md mx-auto relative z-10 opacity-80 leading-relaxed">
               {language === 'es' 
                 ? 'Hemos seleccionado una de las 365 mejores películas calificadas de todos los tiempos especialmente para hoy.' 
                 : 'We have selected one of the 365 highest-rated movies of all time especially for today.'}
             </p>
             <button
               onClick={() => handleReveal(false)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:shadow-[0_0_30px_rgba(147,51,234,0.6)] scale-100 hover:scale-105 active:scale-95 transition-all"
+              className="px-12 py-4 border-[0.5px] border-primary/40 font-body text-xs uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(236,178,255,0.2)] transition-all duration-500 cubic-out relative z-10"
             >
-              {language === 'es' ? 'Recomienda una película' : 'Recommend a movie'}
+              {language === 'es' ? 'Revelar Selección' : 'Reveal Selection'}
             </button>
           </div>
         ) : isLoading ? (
-          <div className="flex justify-center items-center h-full min-h-[400px] bg-neutral-900 border border-neutral-800 rounded-3xl">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+          <div className="flex justify-center items-center h-full min-h-[500px] glass-card border border-white/10 rounded-3xl">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : movie ? (
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-neutral-800 bg-neutral-900 group animate-in fade-in zoom-in-95 duration-500">
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-surface group animate-in fade-in zoom-in-95 duration-700 cubic-out">
             <div className="aspect-video relative overflow-hidden">
               <img 
                 src={tmdb.getImageUrl(movie.backdrop_path || movie.poster_path, 'original')} 
                 alt={movie.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-[2000ms] cubic-out group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/60 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent"></div>
               
-              <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold border border-purple-500/30 mb-4 backdrop-blur-md">
-                  <Star className="w-3.5 h-3.5 fill-current" />
-                  {movie.vote_average.toFixed(1)} / 10
-                </span>
-                <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-2 leading-tight">
+              <div className="absolute bottom-0 left-0 p-8 md:p-12 w-full">
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-bold border border-primary/30 backdrop-blur-md">
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    {movie.vote_average.toFixed(1)}
+                  </span>
+                  <span className="font-body text-xs uppercase tracking-[0.2em] text-on-surface-variant">{movie.release_date?.split('-')[0]}</span>
+                </div>
+                <h3 className="font-display text-4xl md:text-6xl italic text-white mb-4 leading-tight">
                   {movie.title}
                 </h3>
-                <p className="text-neutral-300 max-w-2xl text-sm md:text-base line-clamp-3">
+                <p className="font-body text-on-surface-variant max-w-2xl text-sm md:text-lg line-clamp-3 opacity-80 leading-relaxed">
                   {movie.overview}
                 </p>
               </div>
             </div>
             
-            <div className="p-6 md:p-8 flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between bg-neutral-900">
+            <div className="p-8 md:p-12 flex flex-col sm:flex-row gap-8 items-start sm:items-center justify-between bg-surface/50 backdrop-blur-xl border-t border-white/5">
               <div className="flex-1">
-                <h4 className="text-sm font-bold text-neutral-400 mb-3 flex items-center gap-2">
+                <h4 className="font-body text-xs uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
                   <PlayCircle className="w-4 h-4" />
                   {language === 'es' ? 'Dónde ver:' : 'Where to watch:'}
                 </h4>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-4">
                   {streamProviders.length > 0 ? (
                     streamProviders.map((provider: any) => (
-                      <div key={provider.provider_id} className="flex items-center gap-2 bg-neutral-950 pr-3 rounded-full border border-neutral-800 overflow-hidden" title={provider.provider_name}>
-                        <img src={tmdb.getImageUrl(provider.logo_path)} alt={provider.provider_name} className="w-8 h-8 object-cover" />
-                        <span className="text-xs font-medium text-neutral-300">{provider.provider_name}</span>
+                      <div key={provider.provider_id} className="flex items-center gap-3 bg-white/5 pr-4 rounded-full border border-white/10 overflow-hidden group/provider hover:bg-white/10 transition-colors" title={provider.provider_name}>
+                        <img src={tmdb.getImageUrl(provider.logo_path)} alt={provider.provider_name} className="w-10 h-10 object-cover" />
+                        <span className="font-body text-xs font-medium text-on-surface-variant group-hover/provider:text-primary transition-colors">{provider.provider_name}</span>
                       </div>
                     ))
                   ) : (
-                    <span className="text-sm text-neutral-500 italic">
+                    <span className="font-body text-sm text-on-surface-variant italic opacity-50">
                       {language === 'es' ? 'No disponible en streaming en tu región.' : 'Not available for streaming in your region.'}
                     </span>
                   )}
@@ -249,17 +255,17 @@ export function DailyRecommendation({ user }: { user: any }) {
                 onClick={markAsWatched}
                 disabled={hasWatchedToday}
                 className={`
-                  shrink-0 px-6 py-4 rounded-2xl font-bold flex items-center gap-3 transition-all
+                  shrink-0 px-10 py-4 border-[0.5px] font-body text-xs uppercase tracking-[0.2em] transition-all duration-500 cubic-out flex items-center gap-3
                   ${hasWatchedToday 
-                    ? 'bg-neutral-800 text-purple-400 border border-purple-500/30 cursor-default' 
-                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] scale-100 hover:scale-105 active:scale-95'
+                    ? 'border-primary/20 text-primary/40 cursor-default' 
+                    : 'border-primary/40 text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(236,178,255,0.2)]'
                   }
                 `}
               >
-                <Check className={`w-5 h-5 ${hasWatchedToday ? 'animate-bounce' : ''}`} />
+                <Check className={`w-4 h-4 ${hasWatchedToday ? '' : ''}`} />
                 {hasWatchedToday 
-                  ? (language === 'es' ? 'Vista hoy' : 'Watched today') 
-                  : (language === 'es' ? '¡Ya la vi!' : 'I watched it!')}
+                  ? (language === 'es' ? 'Completado' : 'Completed') 
+                  : (language === 'es' ? 'Marcar como Vista' : 'Mark as Watched')}
               </button>
             </div>
           </div>
@@ -270,25 +276,25 @@ export function DailyRecommendation({ user }: { user: any }) {
       <div className="space-y-6">
         {renderCalendar()}
         
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 rounded-2xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <CalendarIcon className="w-32 h-32 text-purple-500" />
+        <div className="glass-card border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <CalendarIcon className="w-24 h-24 text-primary" />
           </div>
           <div className="relative z-10">
-            <h4 className="text-lg font-bold text-white mb-2">
+            <h4 className="font-display text-lg italic text-white mb-2">
               {language === 'es' ? 'Reto 365 Días' : '365 Days Challenge'}
             </h4>
-            <p className="text-sm text-neutral-400 mb-6">
+            <p className="font-body text-[11px] uppercase tracking-widest text-on-surface-variant mb-6 leading-relaxed opacity-70">
               {language === 'es' ? 'Descubre y mira una película del Top 365 cada día. ¡Completa el calendario!' : 'Discover and watch one movie from the Top 365 every day. Complete the calendar!'}
             </p>
             
-            <div className="w-full bg-neutral-950 rounded-full h-3 mb-2 overflow-hidden border border-neutral-800">
+            <div className="w-full bg-white/5 rounded-full h-1 mb-2 overflow-hidden border border-white/5">
               <div 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-1000"
+                className="bg-primary h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(236,178,255,0.3)]"
                 style={{ width: `${Math.min(100, (watchedDates.length / 365) * 100)}%` }}
               ></div>
             </div>
-            <div className="flex justify-between text-xs font-bold text-neutral-500">
+            <div className="flex justify-between font-body text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
               <span>{watchedDates.length} / 365</span>
               <span>{((watchedDates.length / 365) * 100).toFixed(1)}%</span>
             </div>

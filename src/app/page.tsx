@@ -4,7 +4,7 @@ import { DashboardClient } from '@/components/DashboardClient';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'MoView - Dashboard',
+  title: 'MeoWiew - Dashboard',
   description: 'Generador interactivo para crear, personalizar y compartir widgets de tus reseñas de películas favoritas.',
 };
 
