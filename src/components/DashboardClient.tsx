@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { ReviewBuilder } from '@/components/ReviewBuilder';
 import { TopMovies } from '@/components/TopMovies';
-import { Film, Star, User, LogOut, Menu, X, Languages } from 'lucide-react';
+import { DailyRecommendation } from '@/components/DailyRecommendation';
+import { Film, Star, User, LogOut, Menu, X, Languages, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/LanguageContext';
 
-type Tab = 'review' | 'top5' | 'profile';
+type Tab = 'review' | 'top5' | 'daily' | 'profile';
 
 export function DashboardClient({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState<Tab>('review');
@@ -21,6 +22,7 @@ export function DashboardClient({ user }: { user: any }) {
   const tabs = [
     { id: 'review', label: t('sidebar.review'), icon: Star },
     { id: 'top5', label: t('sidebar.top5'), icon: Film },
+    { id: 'daily', label: t('sidebar.daily'), icon: Calendar },
     { id: 'profile', label: t('sidebar.profile'), icon: User },
   ];
 
@@ -133,10 +135,20 @@ export function DashboardClient({ user }: { user: any }) {
           {activeTab === 'top5' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mb-8">
-                <h2 className="text-3xl font-bold mb-2">{language === 'es' ? 'Top 5 Películas' : 'Top 5 Movies'}</h2>
+                <h2 className="text-3xl font-bold mb-2">{language === 'es' ? 'Tu Top Personal' : 'Your Personal Top'}</h2>
                 <p className="text-neutral-400">{language === 'es' ? 'Selecciona tus favoritas y comparte tu cartelera.' : 'Select your favorites and share your billboard.'}</p>
               </div>
               <TopMovies user={user} />
+            </div>
+          )}
+
+          {activeTab === 'daily' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold mb-2">{language === 'es' ? 'Película Diaria' : 'Daily Movie'}</h2>
+                <p className="text-neutral-400">{language === 'es' ? 'Una recomendación de película elegida especialmente para hoy.' : 'A movie recommendation chosen especially for today.'}</p>
+              </div>
+              <DailyRecommendation user={user} />
             </div>
           )}
 
