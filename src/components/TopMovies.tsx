@@ -180,13 +180,15 @@ export function TopMovies({ user }: { user: any }) {
     if (!exportRef.current) return;
     setIsExporting(true);
     try {
-      const dataUrl = await htmlToImage.toPng(exportRef.current, { 
+      const dataUrl = await htmlToImage.toJpeg(exportRef.current, { 
         cacheBust: true, 
         pixelRatio: 2,
-        skipFonts: false
+        skipFonts: false,
+        quality: 0.95,
+        backgroundColor: '#171717'
       });
       const link = document.createElement('a');
-      link.download = `moview-top-${user.username}.png`;
+      link.download = `moview-top-${user.username}.jpg`;
       link.href = dataUrl;
       link.click();
     } catch (err) {

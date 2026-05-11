@@ -16,7 +16,7 @@ export function ReviewBuilder({ user }: { user: any }) {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [backgroundMode, setBackgroundMode] = useState<'poster' | 'transparent'>('poster');
+  const [backgroundMode, setBackgroundMode] = useState<'poster' | 'dark'>('poster');
   const [theme, setTheme] = useState<'modern' | 'retro-ticket'>('modern');
 
   useEffect(() => {
@@ -187,10 +187,10 @@ export function ReviewBuilder({ user }: { user: any }) {
                     type="radio" 
                     name="bgMode"
                     className="accent-purple-500"
-                    checked={backgroundMode === 'transparent'} 
-                    onChange={() => setBackgroundMode('transparent')} 
+                    checked={backgroundMode === 'dark'} 
+                    onChange={() => setBackgroundMode('dark')} 
                   />
-                  <span className="text-white text-sm">{language === 'es' ? 'Transparente' : 'Transparent'}</span>
+                  <span className="text-white text-sm">{language === 'es' ? 'Oscuro' : 'Dark'}</span>
                 </label>
               </div>
             </div>

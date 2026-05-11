@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { toPng } from 'html-to-image';
+import { toJpeg } from 'html-to-image';
 import { Star, Share2 } from 'lucide-react';
 import { tmdb } from '@/lib/tmdb';
 
@@ -38,7 +38,7 @@ interface ShareWidgetProps {
     username: string;
     avatar_url?: string;
   };
-  backgroundMode?: 'poster' | 'transparent';
+  backgroundMode?: 'poster' | 'dark';
   theme?: 'modern' | 'retro-ticket';
 }
 
@@ -64,11 +64,11 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
     if (!widgetRef.current) return;
     setIsExporting(true);
     try {
-      const dataUrl = await toPng(widgetRef.current, { cacheBust: true, skipFonts: false });
+      const dataUrl = await toJpeg(widgetRef.current, { cacheBust: true, skipFonts: false, quality: 0.95, backgroundColor: '#0a0a0a' });
       
       if (navigator.share) {
         const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], 'movie-rating.png', { type: 'image/png' });
+        const file = new File([blob], 'movie-rating.jpg', { type: 'image/jpeg' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             title: `Reseña de ${movie.title}`,
@@ -81,7 +81,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
       }
       
       const link = document.createElement('a');
-      link.download = `${movie.title.replace(/\s+/g, '-')}-rating.png`;
+      link.download = `${movie.title.replace(/\s+/g, '-')}-rating.jpg`;
       link.href = dataUrl;
       link.click();
     } catch (error: any) {
@@ -92,7 +92,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
     }
   };
 
-  const isTransparent = backgroundMode === 'transparent';
+  const isDark = backgroundMode === 'dark';
 
   const ticketMaskStyle = {
     WebkitMaskImage: 'radial-gradient(circle at 0 0, transparent 60px, black 61px), radial-gradient(circle at 100% 0, transparent 60px, black 61px), radial-gradient(circle at 100% 100%, transparent 60px, black 61px), radial-gradient(circle at 0 100%, transparent 60px, black 61px)',
@@ -114,22 +114,22 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
         <div className="absolute top-0 origin-top transform scale-[0.3] sm:scale-[0.4] lg:scale-[0.45]">
           <div 
             ref={widgetRef} 
-            className={`w-[1080px] h-[1920px] flex items-center justify-center p-8 overflow-hidden relative rounded-3xl ${isTransparent ? 'bg-transparent' : 'bg-neutral-900 shadow-2xl'}`}
+            className={`w-[1080px] h-[1920px] flex items-center justify-center p-8 overflow-hidden relative rounded-3xl ${isDark ? 'bg-neutral-950' : 'bg-neutral-900 shadow-2xl'}`}
             style={{ aspectRatio: '9/16' }}
           >
-            {!isTransparent && backdropBase64 && (
+            {!isDark && backdropBase64 && (
               <img 
                 src={backdropBase64} 
                 alt="backdrop" 
                 className="absolute inset-0 w-full h-full object-cover opacity-60"
               />
             )}
-            {!isTransparent && (
+            {!isDark && (
               <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/90"></div>
             )}
 
         {theme === 'modern' ? (
-          <div className={`bg-black/60 border border-white/10 rounded-[3rem] p-16 w-full max-w-[800px] flex flex-col items-center text-white relative z-10 ${isTransparent ? 'shadow-none' : 'shadow-[0_40px_80px_rgba(0,0,0,0.8)]'}`}>
+          <div className={`bg-black/60 border border-white/10 rounded-[3rem] p-16 w-full max-w-[800px] flex flex-col items-center text-white relative z-10 ${isDark ? 'shadow-none' : 'shadow-[0_40px_80px_rgba(0,0,0,0.8)]'}`}>
             <div className="flex items-center gap-6 mb-12 bg-white/10 px-8 py-4 rounded-full border border-white/5">
               <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 overflow-hidden">
                 {avatarBase64 && (
