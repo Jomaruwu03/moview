@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ReviewBuilder } from '@/components/ReviewBuilder';
 import { TopMovies } from '@/components/TopMovies';
 import { DailyRecommendation } from '@/components/DailyRecommendation';
-import { Film, Star, User, LogOut, Menu, X, Languages, Calendar, Cat } from 'lucide-react';
+import { Clapperboard, Star, User, LogOut, Menu, X, Languages, Calendar, Cat } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -14,6 +14,7 @@ export function DashboardClient({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState<Tab>('review');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const { language, setLanguage, t } = useLanguage();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -21,7 +22,7 @@ export function DashboardClient({ user }: { user: any }) {
 
   const tabs = [
     { id: 'review', label: t('sidebar.review'), icon: Star },
-    { id: 'top5', label: t('sidebar.top5'), icon: Film },
+    { id: 'top5', label: t('sidebar.top5'), icon: Clapperboard },
     { id: 'daily', label: t('sidebar.daily'), icon: Calendar },
     { id: 'profile', label: t('sidebar.profile'), icon: User },
   ];
@@ -60,20 +61,68 @@ export function DashboardClient({ user }: { user: any }) {
           </button>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6 md:gap-8">
           <button 
             onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
-            className="text-primary/60 hover:text-primary text-xs font-bold transition-colors"
+            className="text-primary/60 hover:text-primary text-xs font-bold transition-colors flex items-center gap-2"
           >
+            <Languages className="w-4 h-4 opacity-40" />
             {language === 'es' ? 'EN' : 'ES'}
           </button>
-          <form action="/auth/signout" method="post" className="flex items-center">
-            <button className="text-on-surface-variant hover:text-red-400 transition-colors">
-              <LogOut className="w-5 h-5" />
-            </button>
-          </form>
+          
+          <div className="w-px h-4 bg-white/10"></div>
+          
+          <button 
+            onClick={() => {
+              setConfirmModal({
+                isOpen: true,
+                title: language === 'es' ? 'Cerrar Sesión' : 'Sign Out',
+                message: language === 'es' ? '¿Estás seguro de que deseas abandonar la sesión actual?' : 'Are you sure you want to leave the current session?',
+                onConfirm: () => {
+                  const form = document.createElement('form');
+                  form.action = '/auth/signout';
+                  form.method = 'post';
+                  document.body.appendChild(form);
+                  form.submit();
+                }
+              });
+            }}
+            className="text-on-surface-variant hover:text-red-400 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </header>
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal?.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setConfirmModal(null)}></div>
+          <div className="glass-card border border-white/10 p-8 md:p-12 rounded-[2.5rem] max-w-md w-full relative z-10 shadow-[0_0_100px_rgba(0,0,0,0.5)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-500 cubic-out">
+            <div className="w-12 h-[1px] bg-primary/30 mb-8"></div>
+            <h3 className="font-display text-3xl text-white italic mb-4">{confirmModal.title}</h3>
+            <p className="font-body text-sm text-on-surface-variant leading-relaxed mb-10 opacity-80">{confirmModal.message}</p>
+            
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 py-4 border-[0.5px] border-white/5 font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant hover:bg-white/5 transition-all duration-300"
+              >
+                {language === 'es' ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button 
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="flex-1 py-4 border-[0.5px] border-primary/40 bg-primary/5 font-body text-[10px] uppercase tracking-[0.2em] text-primary hover:bg-primary hover:text-on-primary transition-all duration-500"
+              >
+                {language === 'es' ? 'Confirmar' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 pt-24 md:pt-32 pb-32 md:pb-12 max-w-container-max mx-auto w-full px-4 md:px-margin-desktop">
@@ -145,29 +194,36 @@ export function DashboardClient({ user }: { user: any }) {
                       if (!password || password.length < 6) return toast.error(language === 'es' ? 'Contraseña inválida' : 'Invalid Password');
                       if (password !== confirmPassword) return toast.error(language === 'es' ? 'Las contraseñas no coinciden' : 'Passwords do not match');
                       
-                      setIsUpdatingPassword(true);
-                      try {
-                        const { createClient } = await import('@/utils/supabase/client');
-                        const supabase = createClient();
-                        const { error } = await supabase.auth.updateUser({ password });
-                        if (error) toast.error(error.message);
-                        else {
-                          toast.success(language === 'es' ? '¡Actualizado!' : 'Updated!');
-                          (e.target as HTMLFormElement).reset();
+                      setConfirmModal({
+                        isOpen: true,
+                        title: language === 'es' ? 'Actualizar Seguridad' : 'Update Security',
+                        message: language === 'es' ? 'Tu sesión se mantendrá activa, pero deberás usar la nueva contraseña la próxima vez que ingreses.' : 'Your session will remain active, but you must use the new password the next time you log in.',
+                        onConfirm: async () => {
+                          setIsUpdatingPassword(true);
+                          try {
+                            const { createClient } = await import('@/utils/supabase/client');
+                            const supabase = createClient();
+                            const { error } = await supabase.auth.updateUser({ password });
+                            if (error) toast.error(error.message);
+                            else {
+                              toast.success(language === 'es' ? '¡Actualizado!' : 'Updated!');
+                              (e.target as HTMLFormElement).reset();
+                            }
+                          } finally {
+                            setIsUpdatingPassword(false);
+                          }
                         }
-                      } finally {
-                        setIsUpdatingPassword(false);
-                      }
+                      });
                     }}
                     className="space-y-6"
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="block font-body text-xs uppercase tracking-widest text-on-surface-variant">{language === 'es' ? 'Nueva' : 'New'}</label>
+                        <label className="block font-body text-xs uppercase tracking-widest text-on-surface-variant">{language === 'es' ? 'Nueva Contraseña' : 'New Password'}</label>
                         <input type="password" name="password" minLength={6} required className="w-full bg-white/5 border border-white/10 rounded p-4 text-white focus:border-primary outline-none transition-colors font-body" />
                       </div>
                       <div className="space-y-2">
-                        <label className="block font-body text-xs uppercase tracking-widest text-on-surface-variant">{language === 'es' ? 'Confirmar' : 'Confirm'}</label>
+                        <label className="block font-body text-xs uppercase tracking-widest text-on-surface-variant">{language === 'es' ? 'Confirmar Contraseña' : 'Confirm Password'}</label>
                         <input type="password" name="confirmPassword" minLength={6} required className="w-full bg-white/5 border border-white/10 rounded p-4 text-white focus:border-primary outline-none transition-colors font-body" />
                       </div>
                     </div>
@@ -198,9 +254,9 @@ export function DashboardClient({ user }: { user: any }) {
               onClick={() => setActiveTab(tab.id as Tab)}
               className={`${isActive ? 'text-primary' : 'text-on-surface-variant opacity-60'} relative transition-all duration-500 group flex flex-col items-center`}
             >
-              <Icon className={`w-6 h-6 group-active:scale-90 transition-transform duration-200 ${isActive ? 'fill-primary' : ''}`} />
+              <Icon className={`w-6 h-6 group-active:scale-90 transition-transform duration-200 ${isActive ? 'text-primary' : ''}`} />
               {isActive && (
-                <div className="absolute -bottom-2 w-1 h-1 bg-primary rounded-full"></div>
+                <div className="absolute -bottom-2 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(236,178,255,0.8)]"></div>
               )}
             </button>
           );

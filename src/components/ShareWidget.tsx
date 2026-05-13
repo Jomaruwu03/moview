@@ -139,8 +139,8 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full">
-      <div className="relative w-full h-[700px] sm:h-[850px] lg:h-[1000px] flex justify-center overflow-hidden rounded-3xl border border-white/5 bg-black/20">
+    <div className="flex flex-col items-center gap-6 w-full max-w-full overflow-hidden">
+      <div className="relative w-full h-[65vh] sm:h-[850px] lg:h-[1000px] flex justify-center overflow-hidden rounded-3xl border border-white/5 bg-black/20 shadow-inner">
         <div className="absolute top-8 origin-top transform scale-[0.32] sm:scale-[0.4] lg:scale-[0.48] transition-transform duration-700">
           <div 
             ref={widgetRef} 

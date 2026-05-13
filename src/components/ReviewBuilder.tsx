@@ -41,8 +41,8 @@ export function ReviewBuilder({ user }: { user: any }) {
   }, [query, language]);
 
   return (
-    <div className="grid lg:grid-cols-2 gap-16 items-start w-full mb-24">
-      <div className="glass-card border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl">
+    <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start w-full mb-24 overflow-x-hidden">
+      <div className="glass-card border border-white/10 rounded-3xl p-6 md:p-12 shadow-2xl">
         <div className="mb-10">
           <span className="font-body text-[10px] uppercase tracking-[0.3em] text-primary mb-2 block">{language === 'es' ? 'Creador' : 'Creator'}</span>
           <h2 className="font-display text-4xl italic text-white">{language === 'es' ? 'Nueva Reseña' : 'New Review'}</h2>
@@ -118,13 +118,13 @@ export function ReviewBuilder({ user }: { user: any }) {
 
             <div className="space-y-4">
               <label className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">{language === 'es' ? 'Calificación' : 'Rating'}</label>
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-2 sm:gap-4 items-center">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <div key={star} className="relative w-10 h-10 cursor-pointer group/star">
-                    <Star className="w-10 h-10 text-white/5 transition-colors group-hover/star:text-white/10" />
+                  <div key={star} className="relative w-8 h-8 sm:w-10 sm:h-10 cursor-pointer group/star">
+                    <Star className="w-8 h-8 sm:w-10 sm:h-10 text-white/5 transition-colors group-hover/star:text-white/10" />
                     {(rating >= star - 0.5) && (
                       <div className={`absolute top-0 left-0 h-full overflow-hidden pointer-events-none ${rating >= star ? 'w-full' : 'w-[50%]'}`}>
-                        <Star className="w-10 h-10 max-w-none text-primary fill-primary shadow-[0_0_20px_rgba(236,178,255,0.4)]" />
+                        <Star className="w-8 h-8 sm:w-10 sm:h-10 max-w-none text-primary fill-primary shadow-[0_0_20px_rgba(236,178,255,0.4)]" />
                       </div>
                     )}
                     <div className="absolute inset-0 flex">
@@ -133,7 +133,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                     </div>
                   </div>
                 ))}
-                <span className="font-display text-3xl text-primary italic ml-4">{rating.toFixed(1)}</span>
+                <span className="font-display text-2xl sm:text-3xl text-primary italic ml-2 sm:ml-4">{rating.toFixed(1)}</span>
               </div>
             </div>
             
@@ -153,7 +153,7 @@ export function ReviewBuilder({ user }: { user: any }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8">
+            <div className="grid grid-cols-2 gap-4 md:gap-8">
               <div className="space-y-4">
                 <label className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">{language === 'es' ? 'Estética' : 'Aesthetic'}</label>
                 <div className="flex flex-col gap-3">
