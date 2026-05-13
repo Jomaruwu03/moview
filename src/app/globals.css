@@ -11,14 +11,19 @@
   --color-outline: #9d8ba0;
   --color-background: #000000;
   
-  --font-display: "Bodoni Moda", serif;
-  --font-body: "Geist", sans-serif;
+  --font-display: var(--font-display), serif;
+  --font-body: var(--font-body), sans-serif;
   
   --spacing-margin-desktop: 80px;
   --spacing-section-gap: 160px;
   --spacing-gutter: 24px;
   --spacing-margin-mobile: 20px;
   --spacing-container-max: 1440px;
+}
+
+html, body {
+  background-color: #000000;
+  color: #e2e2e2;
 }
 
 @layer components {

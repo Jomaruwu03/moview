@@ -1,5 +1,17 @@
-import type { Metadata } from "next";
+import { Bodoni_Moda, Geist } from "next/font/google";
 import "./globals.css";
+
+const bodoni = Bodoni_Moda({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display",
+});
+
+const geist = Geist({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-body",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -36,11 +48,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Geist:wght@100..900&display=swap" rel="stylesheet" />
-      </head>
-      <body>
+    <html lang="en" className={`${bodoni.variable} ${geist.variable}`}>
+      <body className="antialiased">
         <LanguageProvider>
           {children}
           <Toaster theme="dark" position="top-center" richColors closeButton />

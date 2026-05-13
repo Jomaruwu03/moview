@@ -180,19 +180,47 @@ export function TopMovies({ user }: { user: any }) {
     if (!exportRef.current) return;
     setIsExporting(true);
     try {
+      // Pequeño retraso para asegurar que el DOM está listo y las fuentes cargadas
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const dataUrl = await htmlToImage.toJpeg(exportRef.current, { 
         cacheBust: true, 
         pixelRatio: 2,
         skipFonts: false,
         quality: 0.95,
-        backgroundColor: '#171717'
+        backgroundColor: '#000000',
+        width: 1080,
+        height: 1920
       });
       const link = document.createElement('a');
       link.download = `meowiew-top-${user.username}.jpg`;
       link.href = dataUrl;
       link.click();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error exportando la imagen:', err);
+      
+      // Fallback: intentar sin fuentes si hay un error de CORS/cross-origin
+      if (err?.message?.includes('cross-origin') || err?.message?.includes('CSSStyleSheet') || err?.message?.includes('Rules')) {
+        try {
+          const dataUrl = await htmlToImage.toJpeg(exportRef.current!, { 
+            cacheBust: true, 
+            skipFonts: true, 
+            quality: 0.9, 
+            backgroundColor: '#000000',
+            width: 1080,
+            height: 1920
+          });
+          const link = document.createElement('a');
+          link.download = `meowiew-top-${user.username}-fixed.jpg`;
+          link.href = dataUrl;
+          link.click();
+          toast.success('Imagen generada (modo compatibilidad)');
+          return;
+        } catch (innerError) {
+          console.error('Fallback falló:', innerError);
+        }
+      }
+
       toast.error('Ocurrió un error al generar tu imagen', {
         description: 'Por favor, intenta nuevamente en unos segundos.',
       });
@@ -291,53 +319,53 @@ export function TopMovies({ user }: { user: any }) {
       </div>
 
       {/* Tarjeta Oculta para Exportar - Rediseño Editorial */}
-      <div className="fixed top-[-9999px] left-[-9999px] pointer-events-none">
+      <div className="fixed left-[-9999px] top-0 w-0 h-0 overflow-hidden pointer-events-none">
         <div 
           ref={exportRef} 
-          className="w-[1200px] h-[1600px] bg-black p-24 flex flex-col font-sans relative overflow-hidden"
-          style={{ backgroundColor: '#000000' }}
+          className="bg-black p-24 flex flex-col font-sans relative overflow-hidden"
+          style={{ width: '1080px', height: '1920px', backgroundColor: '#000000' }}
         >
           {/* Fondo sutil con gradiente y textura */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(236,178,255,0.05),_transparent_70%)]"></div>
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
 
           {/* Header Editorial */}
-          <div className="relative z-10 flex justify-between items-start mb-32">
+          <div className="relative z-10 flex justify-between items-start mb-24">
             <div>
               <p className="font-body text-primary tracking-[0.4em] uppercase text-xl mb-4">Editorial Selection</p>
-              <h1 className="font-display text-[120px] text-white leading-none italic">
+              <h1 className="font-display text-[120px] text-white leading-[0.9] italic">
                 The Essential <br />
                 <span className="text-primary">Five.</span>
               </h1>
             </div>
             <div className="text-right">
-              <div className="flex items-center gap-2 mb-2">
-                <Cat className="w-6 h-6 text-white" />
-                <div className="font-display text-4xl text-white italic">MeoWiew</div>
+              <div className="flex items-center justify-end gap-4 mb-4">
+                <Cat className="w-10 h-10 text-white" />
+                <div className="font-display text-5xl text-white italic">MeoWiew</div>
               </div>
-              <p className="font-body text-white/40 tracking-[0.2em] uppercase text-sm">Issue No. 01 — 2024</p>
+              <p className="font-body text-white/40 tracking-[0.2em] uppercase text-sm">Issue No. 01 — 2026</p>
             </div>
           </div>
 
           {/* Grid Asimétrico */}
-          <div className="relative z-10 flex-1 grid grid-cols-12 grid-rows-6 gap-12">
+          <div className="relative z-10 flex-1 grid grid-cols-12 grid-rows-6 gap-12 min-h-[1300px]">
             {/* Película 1 - Grande Izquierda */}
             {favorites[0] && (
-              <div className="col-span-8 row-span-3 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+              <div className="col-span-7 row-span-3 relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
                 <img src={base64Images[favorites[0].id]} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                <div className="absolute bottom-12 left-12">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                <div className="absolute bottom-10 left-10">
                   <span className="font-display text-[100px] text-primary/40 italic leading-none mb-4 block">01</span>
-                  <h2 className="font-display text-6xl text-white italic">{favorites[0].title}</h2>
+                  <h2 className="font-display text-5xl text-white italic leading-tight">{favorites[0].title}</h2>
                 </div>
               </div>
             )}
 
             {/* Película 2 - Derecha Superior */}
             {favorites[1] && (
-              <div className="col-span-4 row-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl mt-12">
+              <div className="col-span-5 row-span-2 relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
                 <img src={base64Images[favorites[1].id]} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 <div className="absolute bottom-8 left-8">
                   <span className="font-display text-6xl text-primary/40 italic leading-none mb-2 block">02</span>
                   <h2 className="font-display text-3xl text-white italic">{favorites[1].title}</h2>
@@ -347,9 +375,9 @@ export function TopMovies({ user }: { user: any }) {
 
             {/* Película 3 - Derecha Inferior (Pequeña) */}
             {favorites[2] && (
-              <div className="col-span-4 row-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+              <div className="col-span-5 row-span-2 relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
                 <img src={base64Images[favorites[2].id]} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 <div className="absolute bottom-8 left-8">
                   <span className="font-display text-6xl text-primary/40 italic leading-none mb-2 block">03</span>
                   <h2 className="font-display text-3xl text-white italic">{favorites[2].title}</h2>
@@ -359,24 +387,24 @@ export function TopMovies({ user }: { user: any }) {
 
             {/* Película 4 - Izquierda Inferior */}
             {favorites[3] && (
-              <div className="col-span-5 row-span-3 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl -mt-12">
+              <div className="col-span-5 row-span-3 relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
                 <img src={base64Images[favorites[3].id]} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                <div className="absolute bottom-12 left-12">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                <div className="absolute bottom-10 left-10">
                   <span className="font-display text-[80px] text-primary/40 italic leading-none mb-4 block">04</span>
-                  <h2 className="font-display text-4xl text-white italic">{favorites[3].title}</h2>
+                  <h2 className="font-display text-4xl text-white italic leading-tight">{favorites[3].title}</h2>
                 </div>
               </div>
             )}
 
             {/* Película 5 - Derecha Media */}
             {favorites[4] && (
-              <div className="col-span-7 row-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+              <div className="col-span-7 row-span-2 relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
                 <img src={base64Images[favorites[4].id]} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                <div className="absolute bottom-12 left-12">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                <div className="absolute bottom-10 left-10">
                   <span className="font-display text-[80px] text-primary/40 italic leading-none mb-4 block">05</span>
-                  <h2 className="font-display text-4xl text-white italic">{favorites[4].title}</h2>
+                  <h2 className="font-display text-4xl text-white italic leading-tight">{favorites[4].title}</h2>
                 </div>
               </div>
             )}
@@ -389,7 +417,7 @@ export function TopMovies({ user }: { user: any }) {
                 {avatarBase64 && <img src={avatarBase64} className="w-full h-full object-cover" />}
               </div>
               <div>
-                <p className="font-body text-white/40 tracking-widest uppercase text-xs mb-1">Curated by</p>
+                <p className="font-body text-white/40 tracking-widest uppercase text-sm mb-1">Curated by</p>
                 <p className="font-display text-3xl text-white italic">@{user.username}</p>
               </div>
             </div>

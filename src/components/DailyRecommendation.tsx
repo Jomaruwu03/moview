@@ -204,7 +204,7 @@ export function DailyRecommendation({ user }: { user: any }) {
           </div>
         ) : movie ? (
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-surface group animate-in fade-in zoom-in-95 duration-700 cubic-out">
-            <div className="aspect-video relative overflow-hidden">
+            <div className="aspect-[4/5] sm:aspect-video relative overflow-hidden">
               <img 
                 src={tmdb.getImageUrl(movie.backdrop_path || movie.poster_path, 'original')} 
                 alt={movie.title}
