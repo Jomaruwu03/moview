@@ -7,27 +7,50 @@ import { tmdb } from '@/lib/tmdb';
 
 function useImageBase64(url: string | undefined) {
   const [base64, setBase64] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     if (!url) {
       setBase64('');
       return;
     }
-    fetch(url, { mode: 'cors' })
+    
+    // Si ya es base64, no hacer nada
+    if (url.startsWith('data:')) {
+      setBase64(url);
+      return;
+    }
+
+    setIsLoading(true);
+    const controller = new AbortController();
+    
+    fetch(url, { mode: 'cors', signal: controller.signal })
       .then(res => {
         if (!res.ok) throw new Error('Network error');
         return res.blob();
       })
       .then(blob => {
         const reader = new FileReader();
-        reader.onloadend = () => setBase64(reader.result as string);
+        reader.onloadend = () => {
+          setBase64(reader.result as string);
+          setIsLoading(false);
+        };
         reader.readAsDataURL(blob);
       })
       .catch(err => {
-        console.error('Error pre-cargando imagen', err);
-        setBase64(url); // Fallback a la URL normal si falla la conversión
+        if (err.name !== 'AbortError') {
+          console.error('Error pre-cargando imagen:', err);
+          // Fallback al URL original si falla la conversión a base64
+          // Esto permite que al menos se vea en el preview, aunque el export pueda fallar
+          setBase64(url);
+          setIsLoading(false);
+        }
       });
+
+    return () => controller.abort();
   }, [url]);
-  return base64;
+
+  return { base64, isLoading };
 }
 
 interface ShareWidgetProps {
@@ -50,73 +73,97 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
   const widgetRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Precargar imágenes en Base64
+  // Precargar imágenes en Base64 para evitar problemas de CORS durante el export
   const backdropUrl = tmdb.getImageUrl(movie.backdrop_path, 'original');
   const posterUrl = tmdb.getImageUrl(movie.poster_path);
   
-  const backdropBase64 = useImageBase64(backdropUrl);
-  const posterBase64 = useImageBase64(posterUrl);
-  const avatarBase64 = useImageBase64(user.avatar_url);
+  const backdrop = useImageBase64(backdropUrl);
+  const poster = useImageBase64(posterUrl);
+  const avatar = useImageBase64(user.avatar_url);
 
-  const isReadyToExport = (!backdropUrl || backdropBase64) && (!posterUrl || posterBase64) && (!user.avatar_url || avatarBase64);
+  // Consideramos listo si no hay URL o si ya tenemos el base64
+  // No bloqueamos indefinidamente si una imagen falla (isLoading se vuelve false en catch)
+  const isReadyToExport = !backdrop.isLoading && !poster.isLoading && !avatar.isLoading;
 
   const exportImage = async () => {
     if (!widgetRef.current) return;
     setIsExporting(true);
+    
+    const toastId = toast.loading(language === 'es' ? 'Preparando tu Critique...' : 'Preparing your Critique...');
+
+    const options = { 
+      cacheBust: true, 
+      quality: 0.95, 
+      backgroundColor: '#0a0a0a',
+      pixelRatio: 2,
+      style: {
+        borderRadius: '0',
+        transform: 'scale(1)',
+      }
+    };
+
     try {
-      // Small delay to ensure everything is rendered
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Pequeño delay para asegurar renderizado
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      const dataUrl = await toJpeg(widgetRef.current, { 
-        cacheBust: true, 
-        quality: 0.95, 
-        backgroundColor: '#0a0a0a',
-        pixelRatio: 2, // Higher quality
-        style: {
-          borderRadius: '0'
-        }
-      });
+      const dataUrl = await toJpeg(widgetRef.current, options);
       
-      if (navigator.share) {
-        const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], 'meowiew-critique.jpg', { type: 'image/jpeg' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: `Reseña de ${movie.title}`,
-            text: `Mira mi reseña de ${movie.title} en MeoWiew`,
-            files: [file]
-          });
-          setIsExporting(false);
-          return;
+      // Intentar compartir nativamente en móviles
+      if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        try {
+          const blob = await (await fetch(dataUrl)).blob();
+          const file = new File([blob], 'meowiew-critique.jpg', { type: 'image/jpeg' });
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `Critique: ${movie.title}`,
+              text: `Mira mi reseña de ${movie.title} en MeoWiew`,
+              files: [file]
+            });
+            toast.success(language === 'es' ? '¡Compartido con éxito!' : 'Shared successfully!', { id: toastId });
+            setIsExporting(false);
+            return;
+          }
+        } catch (shareError) {
+          console.warn('Native share failed, falling back to download:', shareError);
         }
       }
       
+      // Fallback a descarga tradicional
       const link = document.createElement('a');
       link.download = `meowiew-${movie.title.toLowerCase().replace(/\s+/g, '-')}.jpg`;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      
+      toast.success(language === 'es' ? 'Imagen descargada' : 'Image downloaded', { id: toastId });
     } catch (error: any) {
       console.error('Error al generar imagen:', error);
-      // Fallback: try skipping fonts if there's a cross-origin error
+      
+      // Fallback extremo: intentar sin fuentes si hay error de cross-origin
       if (error?.message?.includes('cross-origin') || error?.message?.includes('CSSStyleSheet')) {
         try {
           const dataUrl = await toJpeg(widgetRef.current, { 
-            cacheBust: true, 
-            skipFonts: true, 
-            quality: 0.9, 
-            backgroundColor: '#0a0a0a' 
-          });
+            ...options,
+            skipFonts: true,
+          } as any);
+          
           const link = document.createElement('a');
           link.download = `meowiew-${movie.title.toLowerCase().replace(/\s+/g, '-')}-fallback.jpg`;
           link.href = dataUrl;
           link.click();
-          toast.success('Exportado con éxito (modo compatibilidad)');
+          toast.success(language === 'es' ? 'Exportado (modo compatibilidad)' : 'Exported (compatibility mode)', { id: toastId });
           return;
         } catch (innerError) {
           console.error('Fallback failed:', innerError);
         }
       }
-      toast.error('Error de exportación', { description: 'Hubo un problema al generar la imagen.' });
+      
+      toast.error(language === 'es' ? 'Error de exportación' : 'Export error', { 
+        description: language === 'es' ? 'No pudimos generar la imagen. Intenta de nuevo.' : 'Could not generate image. Please try again.',
+        id: toastId 
+      });
     } finally {
       setIsExporting(false);
     }
@@ -147,10 +194,11 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
             className={`w-[1080px] h-[1920px] flex items-center justify-center p-8 overflow-hidden relative rounded-3xl ${isDark ? 'bg-neutral-950' : 'bg-neutral-900 shadow-2xl'}`}
             style={{ aspectRatio: '9/16' }}
           >
-            {!isDark && backdropBase64 && (
+            {!isDark && backdrop.base64 && (
               <img 
-                src={backdropBase64} 
+                src={backdrop.base64} 
                 alt="backdrop" 
+                crossOrigin="anonymous"
                 className="absolute inset-0 w-full h-full object-cover opacity-60"
               />
             )}
@@ -162,8 +210,8 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
           <div className={`bg-black/60 border border-white/10 rounded-[4rem] p-20 w-full max-w-[850px] flex flex-col items-center text-white relative z-10 ${isDark ? 'shadow-none' : 'shadow-[0_40px_80px_rgba(0,0,0,0.8)]'}`}>
             <div className="flex items-center gap-8 mb-16 bg-white/10 px-10 py-5 rounded-full border border-white/5">
               <div className="w-20 h-20 rounded-full bg-surface-variant overflow-hidden border-2 border-primary/20">
-                {avatarBase64 && (
-                  <img src={avatarBase64} alt={user.username} className="w-full h-full object-cover" />
+                {avatar.base64 && (
+                  <img src={avatar.base64} alt={user.username} crossOrigin="anonymous" className="w-full h-full object-cover" />
                 )}
               </div>
               <div className="flex flex-col">
@@ -173,8 +221,8 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
             </div>
 
             <div className="w-[480px] h-[720px] rounded-[2.5rem] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.9)] mb-16 border border-white/10 bg-surface">
-              {posterBase64 && (
-                <img src={posterBase64} alt={movie.title} className="w-full h-full object-cover" />
+              {poster.base64 && (
+                <img src={poster.base64} alt={movie.title} crossOrigin="anonymous" className="w-full h-full object-cover" />
               )}
             </div>
 
@@ -237,7 +285,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                   <div className="absolute -inset-4 border border-white/10 rounded-[3rem]"></div>
                   <div className="absolute -inset-8 border border-white/5 rounded-[4rem]"></div>
                   <div className="w-full h-full rounded-[2.5rem] overflow-hidden border border-white/20 shadow-[0_50px_100px_rgba(0,0,0,0.9)] relative z-10">
-                    {posterBase64 && <img src={posterBase64} className="w-full h-full object-cover" />}
+                    {poster.base64 && <img src={poster.base64} crossOrigin="anonymous" className="w-full h-full object-cover" />}
                   </div>
                 </div>
 
@@ -279,7 +327,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
               <div className="mt-32 w-full flex justify-between items-end border-t border-white/10 pt-12">
                 <div className="flex items-center gap-6">
                   <div className="w-16 h-16 rounded-full overflow-hidden border border-primary/20">
-                    {avatarBase64 && <img src={avatarBase64} className="w-full h-full object-cover" />}
+                    {avatar.base64 && <img src={avatar.base64} crossOrigin="anonymous" className="w-full h-full object-cover" />}
                   </div>
                   <div>
                     <p className="font-body text-white/40 text-xs uppercase tracking-widest mb-1">Reviewed by</p>
