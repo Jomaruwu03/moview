@@ -155,7 +155,15 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
               title: `Critique: ${movie.title}`,
               text: language === 'es' ? `Mi reseña de ${movie.title} en MeoWiew` : `My review of ${movie.title} on MeoWiew`,
             });
-            toast.success(language === 'es' ? '¡Compartido con éxito!' : 'Shared successfully!', { id: toastId });
+            toast.success(
+              language === 'es' ? '¡Critique lista para compartir!' : 'Critique ready to share!',
+              { 
+                id: toastId,
+                description: language === 'es' 
+                  ? 'Selecciona Instagram Stories o tu red social favorita en el menú.' 
+                  : 'Select Instagram Stories or your favorite social network from the menu.'
+              }
+            );
             setIsExporting(false);
             return;
           }
@@ -169,7 +177,17 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
       link.download = `critique-${movie.id}.jpeg`;
       link.href = dataUrl;
       link.click();
-      toast.success(language === 'es' ? '¡Critique descargada con éxito!' : 'Critique downloaded successfully!', { id: toastId });
+      toast.success(
+        language === 'es' 
+          ? '¡Critique descargada con éxito!' 
+          : 'Critique downloaded successfully!',
+        { 
+          id: toastId,
+          description: language === 'es'
+            ? '¡Abre Instagram y sube la imagen de tu galería a tus Historias!'
+            : 'Open Instagram and upload the image from your gallery to your Stories!'
+        }
+      );
     } catch (err: any) {
       console.error('Error generating image:', err);
       toast.error(language === 'es' ? 'Error al generar la imagen' : 'Failed to generate image', { id: toastId });
