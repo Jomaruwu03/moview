@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
@@ -18,6 +18,19 @@ export default function LoginPage() {
 
   const supabase = createClient()
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const errorMsg = params.get('error') || params.get('message')
+      if (errorMsg) {
+        toast.error(language === 'es' ? 'Error de verificación' : 'Verification error', {
+          description: decodeURIComponent(errorMsg).replace(/\+/g, ' ')
+        })
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [language])
+
   const validate = (isSignup: boolean) => {
     if (!email || !email.includes('@')) {
       toast.error(language === 'es' ? 'Correo inválido' : 'Invalid email', { description: language === 'es' ? 'Por favor, ingresa un correo electrónico válido.' : 'Please enter a valid email address.' })
@@ -27,9 +40,20 @@ export default function LoginPage() {
       toast.error(language === 'es' ? 'Contraseña muy corta' : 'Password too short', { description: language === 'es' ? 'Tu contraseña debe tener al menos 6 caracteres.' : 'Your password must be at least 6 characters long.' })
       return false
     }
-    if (isSignup && !username) {
-      toast.error(language === 'es' ? 'Falta usuario' : 'Missing username', { description: language === 'es' ? 'Por favor, escoge un nombre de usuario.' : 'Please choose a username.' })
-      return false
+    if (isSignup) {
+      if (!username) {
+        toast.error(language === 'es' ? 'Falta usuario' : 'Missing username', { description: language === 'es' ? 'Por favor, escoge un nombre de usuario.' : 'Please choose a username.' })
+        return false
+      }
+      if (username.length < 3 || username.length > 20) {
+        toast.error(language === 'es' ? 'Usuario inválido' : 'Invalid username', { description: language === 'es' ? 'El usuario debe tener entre 3 y 20 caracteres.' : 'Username must be between 3 and 20 characters.' })
+        return false
+      }
+      const usernameRegex = /^[a-zA-Z0-9_-]+$/
+      if (!usernameRegex.test(username)) {
+        toast.error(language === 'es' ? 'Usuario inválido' : 'Invalid username', { description: language === 'es' ? 'Solo se permiten letras, números, guiones y guiones bajos.' : 'Only letters, numbers, hyphens, and underscores are allowed.' })
+        return false
+      }
     }
     return true
   }
@@ -65,10 +89,29 @@ export default function LoginPage() {
 
     setIsLoading('signup')
     try {
+      // 1. Check if username is already taken
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle()
+
+      if (existingUser) {
+        toast.error(
+          language === 'es' ? 'Usuario no disponible' : 'Username taken',
+          { description: language === 'es' ? 'Este nombre de usuario ya está registrado.' : 'This username is already taken.' }
+        )
+        setIsLoading(null)
+        return
+      }
+
+      // 2. Perform sign up with redirect options
+      const redirectUrl = `${window.location.origin}/auth/callback`
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             username: username || email.split('@')[0],
             avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || email}`
@@ -83,7 +126,14 @@ export default function LoginPage() {
         router.push('/')
         router.refresh()
       } else {
-        toast.info(language === 'es' ? 'Verifica tu correo' : 'Verify your email', { description: language === 'es' ? 'Por seguridad, revisa tu bandeja de entrada para activar tu cuenta. Si desactivas esta opción en Supabase, entrarás automáticamente.' : 'For security, check your inbox to activate your account. If you disable this in Supabase, you will log in automatically.' })
+        toast.info(
+          language === 'es' ? 'Verifica tu correo' : 'Verify your email',
+          {
+            description: language === 'es'
+              ? 'Te hemos enviado un correo de confirmación. Por favor, revisa tu bandeja de entrada (y la carpeta de spam) para activar tu cuenta.'
+              : 'We have sent you a confirmation email. Please check your inbox (and spam folder) to activate your account.'
+          }
+        )
       }
     } catch (err: any) {
       toast.error(language === 'es' ? 'Error inesperado' : 'Unexpected error', { description: err?.message || (language === 'es' ? 'No pudimos conectarnos.' : 'We could not connect.') })
