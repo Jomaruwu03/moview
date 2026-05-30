@@ -193,7 +193,7 @@ export function DailyRecommendation({ user }: { user: any }) {
             </p>
             <button
               onClick={() => handleReveal(false)}
-              className="px-12 py-4 border-[0.5px] border-primary/40 font-body text-xs uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(236,178,255,0.2)] transition-all duration-500 cubic-out relative z-10"
+              className="px-12 py-4 border-[0.5px] border-primary/40 font-body text-xs uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(212,178,255,0.2)] transition-all duration-500 cubic-out relative z-10"
             >
               {language === 'es' ? 'Revelar Selección' : 'Reveal Selection'}
             </button>
@@ -258,7 +258,7 @@ export function DailyRecommendation({ user }: { user: any }) {
                   shrink-0 px-10 py-4 border-[0.5px] font-body text-xs uppercase tracking-[0.2em] transition-all duration-500 cubic-out flex items-center gap-3
                   ${hasWatchedToday 
                     ? 'border-primary/20 text-primary/40 cursor-default' 
-                    : 'border-primary/40 text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(236,178,255,0.2)]'
+                    : 'border-primary/40 text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(212,178,255,0.2)]'
                   }
                 `}
               >
@@ -290,7 +290,7 @@ export function DailyRecommendation({ user }: { user: any }) {
             
             <div className="w-full bg-white/5 rounded-full h-1 mb-2 overflow-hidden border border-white/5">
               <div 
-                className="bg-primary h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(236,178,255,0.3)]"
+                className="bg-primary h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(212,178,255,0.3)]"
                 style={{ width: `${Math.min(100, (watchedDates.length / 365) * 100)}%` }}
               ></div>
             </div>

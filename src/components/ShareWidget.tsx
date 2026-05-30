@@ -24,12 +24,26 @@ function useImageBase64(url: string | undefined) {
     setIsLoading(true);
     const controller = new AbortController();
     
-    fetch(url, { mode: 'cors', signal: controller.signal })
+    // Corregir estilos obsoletos/inválidos de Dicebear (como cats) a un estilo válido (como avataaars)
+    let targetUrl = url;
+    if (url.includes('dicebear.com') && url.includes('/cats/')) {
+      targetUrl = url.replace('/cats/', '/avataaars/');
+    }
+    
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(targetUrl)}`;
+    
+    fetch(proxyUrl, { signal: controller.signal })
       .then(res => {
-        if (!res.ok) throw new Error('Network error');
+        if (!res.ok) {
+          // No lanzamos error para evitar alarmas en consola, usamos fallback silencioso
+          setBase64(targetUrl);
+          setIsLoading(false);
+          return null;
+        }
         return res.blob();
       })
       .then(blob => {
+        if (!blob) return;
         const reader = new FileReader();
         reader.onloadend = () => {
           setBase64(reader.result as string);
@@ -39,10 +53,8 @@ function useImageBase64(url: string | undefined) {
       })
       .catch(err => {
         if (err.name !== 'AbortError') {
-          console.error('Error pre-cargando imagen:', err);
-          // Fallback al URL original si falla la conversión a base64
-          // Esto permite que al menos se vea en el preview, aunque el export pueda fallar
-          setBase64(url);
+          // Fallback silencioso al URL original corregido
+          setBase64(targetUrl);
           setIsLoading(false);
         }
       });
@@ -71,7 +83,29 @@ import { toast } from 'sonner';
 export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 'poster', theme = 'modern' }: ShareWidgetProps) {
   const { language } = useLanguage();
   const widgetRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.3);
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateScale = () => {
+      const width = containerRef.current?.getBoundingClientRect().width || 0;
+      if (width > 0) {
+        setScale(width / 1080);
+      }
+    };
+    updateScale();
+    // Use dynamic ResizeObserver to capture size changes accurately on all screens
+    const observer = new ResizeObserver(updateScale);
+    if (containerRef.current) observer.observe(containerRef.current);
+    
+    window.addEventListener('resize', updateScale);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateScale);
+    };
+  }, []);
 
   // Precargar imágenes en Base64 para evitar problemas de CORS durante el export
   const backdropUrl = tmdb.getImageUrl(movie.backdrop_path, 'original');
@@ -111,59 +145,34 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
       // Intentar compartir nativamente en móviles
       if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         try {
-          const blob = await (await fetch(dataUrl)).blob();
-          const file = new File([blob], 'meowiew-critique.jpg', { type: 'image/jpeg' });
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `critique-${movie.id}.jpg`, { type: 'image/jpeg' });
           
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
+              files: [file],
               title: `Critique: ${movie.title}`,
-              text: `Mira mi reseña de ${movie.title} en MeoWiew`,
-              files: [file]
+              text: language === 'es' ? `Mi reseña de ${movie.title} en MeoWiew` : `My review of ${movie.title} on MeoWiew`,
             });
             toast.success(language === 'es' ? '¡Compartido con éxito!' : 'Shared successfully!', { id: toastId });
             setIsExporting(false);
             return;
           }
-        } catch (shareError) {
-          console.warn('Native share failed, falling back to download:', shareError);
+        } catch (shareErr) {
+          console.log('Native share failed or cancelled, falling back to download:', shareErr);
         }
       }
-      
-      // Fallback a descarga tradicional
+
+      // Descarga convencional si no se pudo compartir
       const link = document.createElement('a');
-      link.download = `meowiew-${movie.title.toLowerCase().replace(/\s+/g, '-')}.jpg`;
+      link.download = `critique-${movie.id}.jpeg`;
       link.href = dataUrl;
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      
-      toast.success(language === 'es' ? 'Imagen descargada' : 'Image downloaded', { id: toastId });
-    } catch (error: any) {
-      console.error('Error al generar imagen:', error);
-      
-      // Fallback extremo: intentar sin fuentes si hay error de cross-origin
-      if (error?.message?.includes('cross-origin') || error?.message?.includes('CSSStyleSheet')) {
-        try {
-          const dataUrl = await toJpeg(widgetRef.current, { 
-            ...options,
-            skipFonts: true,
-          } as any);
-          
-          const link = document.createElement('a');
-          link.download = `meowiew-${movie.title.toLowerCase().replace(/\s+/g, '-')}-fallback.jpg`;
-          link.href = dataUrl;
-          link.click();
-          toast.success(language === 'es' ? 'Exportado (modo compatibilidad)' : 'Exported (compatibility mode)', { id: toastId });
-          return;
-        } catch (innerError) {
-          console.error('Fallback failed:', innerError);
-        }
-      }
-      
-      toast.error(language === 'es' ? 'Error de exportación' : 'Export error', { 
-        description: language === 'es' ? 'No pudimos generar la imagen. Intenta de nuevo.' : 'Could not generate image. Please try again.',
-        id: toastId 
-      });
+      toast.success(language === 'es' ? '¡Critique descargada con éxito!' : 'Critique downloaded successfully!', { id: toastId });
+    } catch (err: any) {
+      console.error('Error generating image:', err);
+      toast.error(language === 'es' ? 'Error al generar la imagen' : 'Failed to generate image', { id: toastId });
     } finally {
       setIsExporting(false);
     }
@@ -187,8 +196,18 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-full overflow-hidden">
-      <div className="relative w-full h-[65vh] sm:h-[850px] lg:h-[1000px] flex justify-center overflow-hidden rounded-3xl border border-white/5 bg-black/20 shadow-inner">
-        <div className="absolute top-8 origin-top transform scale-[0.32] sm:scale-[0.4] lg:scale-[0.48] transition-transform duration-700">
+      <div 
+        ref={containerRef}
+        className="relative w-full max-w-[450px] aspect-[9/16] flex justify-center overflow-hidden rounded-3xl border border-white/5 bg-neutral-950 shadow-inner"
+      >
+        <div 
+          className="absolute top-0 left-0 origin-top-left"
+          style={{ 
+            transform: `scale(${scale})`,
+            width: '1080px',
+            height: '1920px'
+          }}
+        >
           <div 
             ref={widgetRef} 
             className={`w-[1080px] h-[1920px] flex items-center justify-center p-8 overflow-hidden relative rounded-3xl ${isDark ? 'bg-neutral-950' : 'bg-neutral-900 shadow-2xl'}`}
@@ -244,7 +263,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                     <Star className="w-20 h-20 text-white/5 fill-white/5" />
                     {(isFull || isHalf) && (
                       <div className={`absolute top-0 left-0 h-full overflow-hidden ${isHalf ? 'w-[50%]' : 'w-full'}`}>
-                        <Star className="w-20 h-20 max-w-none text-primary fill-primary shadow-[0_0_30px_rgba(236,178,255,0.5)]" />
+                        <Star className="w-20 h-20 max-w-none text-primary fill-primary shadow-[0_0_30px_rgba(212,178,255,0.5)]" />
                       </div>
                     )}
                   </div>
@@ -254,7 +273,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
 
             {reviewText && (
               <div className="relative mb-20">
-                <p className="font-display italic text-white/90 text-5xl text-center leading-relaxed max-w-[750px] break-words">
+                <p className="font-serif font-bold italic text-white text-5xl text-center leading-relaxed max-w-[750px] break-words">
                   "{reviewText}"
                 </p>
               </div>
@@ -305,7 +324,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                           <Star className="w-12 h-12 text-white/5 fill-white/5" />
                           {(isFull || isHalf) && (
                             <div className={`absolute top-0 left-0 h-full overflow-hidden ${isHalf ? 'w-[50%]' : 'w-full'}`}>
-                              <Star className="w-12 h-12 max-w-none text-primary fill-primary shadow-[0_0_20px_rgba(236,178,255,0.4)]" />
+                              <Star className="w-12 h-12 max-w-none text-primary fill-primary shadow-[0_0_20px_rgba(212,178,255,0.4)]" />
                             </div>
                           )}
                         </div>
@@ -315,9 +334,8 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
 
                   {reviewText && (
                     <div className="relative">
-                      <div className="absolute -left-8 top-0 text-primary/20 font-display text-9xl leading-none">"</div>
-                      <p className="font-display italic text-white/90 text-4xl leading-relaxed relative z-10">
-                        {reviewText}
+                      <p className="font-serif font-bold italic text-white text-4xl leading-relaxed relative z-10">
+                        "{reviewText}"
                       </p>
                     </div>
                   )}
@@ -331,7 +349,10 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                   </div>
                   <div>
                     <p className="font-body text-white/40 text-xs uppercase tracking-widest mb-1">Reviewed by</p>
-                    <p className="font-display text-2xl text-white italic">@{user.username}</p>
+                    <p className="font-display text-2xl text-white italic mb-1">@{user.username}</p>
+                    <p className="font-body text-primary/60 text-[10px] uppercase tracking-[0.15em] font-bold">
+                      {new Date().toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -349,7 +370,7 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
       <button 
         onClick={exportImage} 
         disabled={isExporting || !isReadyToExport}
-        className="px-12 py-4 border-[0.5px] border-primary/40 font-body text-xs uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(236,178,255,0.2)] transition-all duration-500 cubic-out flex items-center gap-3 disabled:opacity-30"
+        className="px-12 py-4 border-[0.5px] border-primary/40 font-body text-xs uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(212,178,255,0.2)] transition-all duration-500 cubic-out flex items-center gap-3 disabled:opacity-30"
       >
         {isExporting ? <span className="animate-pulse">{language === 'es' ? 'Generando...' : 'Generating...'}</span> : (!isReadyToExport ? (language === 'es' ? 'Cargando assets...' : 'Loading assets...') : <><Share2 className="w-4 h-4" /> {language === 'es' ? 'Compartir Critique' : 'Share Critique'}</>)}
       </button>

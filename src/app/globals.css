@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ecb2ff;
+  --color-primary: #d4b2ff;
   --color-secondary: #ffaedd;
-  --color-surface: #131313;
-  --color-surface-dim: #131313;
-  --color-surface-variant: #353535;
+  --color-surface: #252527;
+  --color-surface-dim: #212123;
+  --color-surface-variant: #323236;
   --color-on-surface: #e2e2e2;
   --color-on-surface-variant: #d4c0d7;
   --color-outline: #9d8ba0;
-  --color-background: #000000;
+  --color-background: #1a1a1c;
   
   --font-display: var(--font-display), serif;
   --font-body: var(--font-body), sans-serif;
@@ -22,20 +22,22 @@
 }
 
 html, body {
-  background-color: #000000;
+  background-color: #1a1a1c;
   color: #e2e2e2;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 @layer components {
   .glass-card {
-    background: rgba(10, 10, 10, 0.4);
+    background: rgba(37, 37, 39, 0.5);
     backdrop-filter: blur(24px);
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
   }
   
   .metallic-plate {
-    background: linear-gradient(135deg, #353535 0%, #1f1f1f 100%);
-    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, #323236 0%, #212123 100%);
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 10px rgba(0, 0, 0, 0.5);
   }
 }

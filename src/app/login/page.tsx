@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [isSignupMode, setIsSignupMode] = useState(false)
   
   const [isLoading, setIsLoading] = useState<'login' | 'signup' | null>(null)
 
@@ -193,10 +194,37 @@ export default function LoginPage() {
         <div className="p-8 sm:p-16 flex flex-col justify-center">
           <div className="lg:hidden text-center mb-10">
             <div className="flex justify-center mb-4">
-              <Cat className="w-12 h-12 text-primary" />
+              <Cat className="w-12 h-12 text-primary animate-pulse" />
             </div>
-            <h1 className="font-display text-5xl uppercase tracking-widest text-primary mb-4">MEOWIEW</h1>
-            <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">Editorial Cinema Platform</p>
+            <h1 className="font-display text-5xl uppercase tracking-widest text-primary mb-2">MEOWIEW</h1>
+            <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant mb-6">Editorial Cinema Platform</p>
+            <p className="font-body text-xs text-on-surface-variant/80 max-w-sm mx-auto leading-relaxed border-t border-white/5 pt-4">
+              {language === 'es' 
+                ? 'Tu espacio personal para reseñar películas, organizar tu Top 5 y descubrir el séptimo arte con estilo editorial.' 
+                : 'Your personal space to review movies, organize your Top 5, and discover cinema with an editorial style.'}
+            </p>
+          </div>
+
+          {/* Login / Register Switch */}
+          <div className="flex bg-white/5 border border-white/10 p-1 rounded-full mb-8">
+            <button
+              type="button"
+              onClick={() => setIsSignupMode(false)}
+              className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
+                !isSignupMode ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
+              }`}
+            >
+              {language === 'es' ? 'Iniciar Sesión' : 'Log In'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSignupMode(true)}
+              className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
+                isSignupMode ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
+              }`}
+            >
+              {language === 'es' ? 'Registrarse' : 'Sign Up'}
+            </button>
           </div>
 
           <form className="flex flex-col w-full gap-6">
@@ -213,19 +241,21 @@ export default function LoginPage() {
                 />
               </div>
               
-              <div className="group">
-                <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="username">
-                  {language === 'es' ? 'Usuario ' : 'Username '}
-                  <span className="text-white/20 normal-case tracking-normal">{language === 'es' ? '(solo registro)' : '(signup only)'}</span>
-                </label>
-                <input
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500 placeholder:text-white/20"
-                  name="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="cinemaphile"
-                />
-              </div>
+              {isSignupMode && (
+                <div className="group animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="username">
+                    {language === 'es' ? 'Usuario' : 'Username'}
+                  </label>
+                  <input
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500 placeholder:text-white/20"
+                    name="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="cinemaphile"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="group">
                 <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="password">{language === 'es' ? 'Contraseña' : 'Password'}</label>
@@ -242,21 +272,25 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col gap-4 mt-4">
-              <button
-                onClick={handleLogin}
-                disabled={isLoading !== null}
-                className="w-full py-5 bg-primary text-on-primary font-body text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(236,178,255,0.2)] hover:shadow-[0_15px_40px_rgba(236,178,255,0.3)] hover:-translate-y-0.5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {isLoading === 'login' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Entrar a la Sala' : 'Enter the Theater')}
-              </button>
-              
-              <button
-                onClick={handleSignup}
-                disabled={isLoading !== null}
-                className="w-full py-5 border-[0.5px] border-white/10 font-body text-xs uppercase tracking-[0.2em] text-on-surface hover:bg-white/5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {isLoading === 'signup' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Crear una Cuenta' : 'Sign Up')}
-              </button>
+              {!isSignupMode ? (
+                <button
+                  type="submit"
+                  onClick={handleLogin}
+                  disabled={isLoading !== null}
+                  className="w-full py-5 bg-primary text-on-primary font-body text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(212,178,255,0.2)] hover:shadow-[0_15px_40px_rgba(212,178,255,0.3)] hover:-translate-y-0.5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {isLoading === 'login' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Entrar a la Sala' : 'Enter the Theater')}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  onClick={handleSignup}
+                  disabled={isLoading !== null}
+                  className="w-full py-5 bg-primary text-on-primary font-body text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(212,178,255,0.2)] hover:shadow-[0_15px_40px_rgba(212,178,255,0.3)] hover:-translate-y-0.5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {isLoading === 'signup' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Crear una Cuenta' : 'Sign Up')}
+                </button>
+              )}
             </div>
           </form>
           
