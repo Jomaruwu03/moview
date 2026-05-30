@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { ReviewBuilder } from '@/components/ReviewBuilder';
 import { TopMovies } from '@/components/TopMovies';
 import { DailyRecommendation } from '@/components/DailyRecommendation';
-import { Clapperboard, Star, User, LogOut, Menu, X, Languages, Calendar, Cat } from 'lucide-react';
+import { AdminPanel } from '@/components/AdminPanel';
+import { Clapperboard, Star, User, LogOut, Menu, X, Languages, Calendar, Cat, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/LanguageContext';
 
-type Tab = 'review' | 'top5' | 'daily' | 'profile';
+type Tab = 'review' | 'top5' | 'daily' | 'profile' | 'admin';
 
 export function DashboardClient({ user }: { user: any }) {
+  const [currentUser, setCurrentUser] = useState(user);
   const [activeTab, setActiveTab] = useState<Tab>('review');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -27,10 +29,14 @@ export function DashboardClient({ user }: { user: any }) {
     { id: 'profile', label: t('sidebar.profile'), icon: User },
   ];
 
+  if (currentUser.is_admin) {
+    tabs.splice(3, 0, { id: 'admin', label: t('sidebar.admin'), icon: Shield });
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-on-background font-body selection:bg-primary/30">
       {/* Top Navigation Shell */}
-      <header className="fixed top-0 w-full z-50 bg-surface/50 backdrop-blur-xl border-b border-white/10 flex justify-between items-center px-4 md:px-margin-desktop py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/50 backdrop-blur-xl border-b border-white/10 flex justify-between items-center px-4 md:px-margin-desktop py-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Cat className="w-6 h-6 text-primary" />
@@ -42,7 +48,7 @@ export function DashboardClient({ user }: { user: any }) {
         
         <div className="hidden md:flex gap-8 items-center">
           <nav className="flex gap-12">
-            {tabs.slice(0, 3).map((tab) => (
+            {tabs.filter(t => t.id !== 'profile').map((tab) => (
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as Tab)}
@@ -133,7 +139,7 @@ export function DashboardClient({ user }: { user: any }) {
               <h2 className="font-display text-4xl md:text-display-lg italic">{language === 'es' ? 'Constructor de Reseñas' : 'Review Builder'}</h2>
               <div className="w-12 h-[1px] bg-primary/30 mt-8"></div>
             </div>
-            <ReviewBuilder user={user} />
+            <ReviewBuilder user={currentUser} />
           </div>
         )}
         
@@ -144,13 +150,19 @@ export function DashboardClient({ user }: { user: any }) {
               <h2 className="font-display text-4xl md:text-display-lg italic">{language === 'es' ? 'Tus 5 Obras Maestras' : 'Top 5 Masterpieces'}</h2>
               <div className="w-12 h-[1px] bg-primary/30 mt-8"></div>
             </div>
-            <TopMovies user={user} />
+            <TopMovies user={currentUser} />
           </div>
         )}
 
         {activeTab === 'daily' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 cubic-out">
-            <DailyRecommendation user={user} />
+            <DailyRecommendation user={currentUser} />
+          </div>
+        )}
+
+        {activeTab === 'admin' && currentUser.is_admin && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 cubic-out">
+            <AdminPanel language={language} currentUserId={currentUser.id} />
           </div>
         )}
 
@@ -163,14 +175,27 @@ export function DashboardClient({ user }: { user: any }) {
             </div>
             
             <div className="glass-card p-8 rounded-lg">
-              <div className="flex items-center gap-6 mb-12 border-b border-white/5 pb-8">
-                <div className="relative group">
-                  <img src={user.avatar_url} className="w-24 h-24 rounded-full border border-white/10 object-cover" />
+              <div className="flex flex-col sm:flex-row items-center gap-6 mb-12 border-b border-white/5 pb-8">
+                <div className="relative group shrink-0">
+                  <img 
+                    src={currentUser.avatar_url && currentUser.avatar_url.includes('/cats/') 
+                      ? currentUser.avatar_url.replace('/cats/', '/avataaars/') 
+                      : (currentUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.username}`)} 
+                    className="w-24 h-24 rounded-full border border-white/10 object-cover" 
+                  />
                   <div className="absolute inset-0 bg-primary/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
-                <div>
-                  <h3 className="font-display text-3xl text-white">@{user.username}</h3>
-                  <p className="font-body text-xs uppercase tracking-widest text-on-surface-variant mt-1">{language === 'es' ? 'Mecenas de MeoWiew' : 'MeoWiew Patron'}</p>
+                <div className="text-center sm:text-left">
+                  <h3 className="font-display text-3xl text-white break-all">@{currentUser.username}</h3>
+                  <p className="font-body text-xs uppercase tracking-widest text-on-surface-variant mt-1 flex flex-wrap justify-center sm:justify-start items-center gap-2">
+                    {language === 'es' ? 'Mecenas de MeoWiew' : 'MeoWiew Patron'}
+                    {currentUser.is_admin && (
+                      <span className="bg-primary/20 text-primary border border-primary/30 text-[9px] uppercase tracking-wider px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                        <Shield className="w-2.5 h-2.5" />
+                        Admin
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
               
@@ -178,10 +203,10 @@ export function DashboardClient({ user }: { user: any }) {
                 <div className="group">
                   <label className="block font-body text-xs uppercase tracking-widest text-on-surface-variant mb-3">{language === 'es' ? 'Identidad' : 'Identity'}</label>
                   <div className="bg-white/5 border border-white/10 rounded p-4 text-on-surface/60 font-body">
-                    @{user.username}
+                    @{currentUser.username}
                   </div>
                 </div>
-                
+
                 <div className="pt-8 border-t border-white/5">
                   <h4 className="font-display text-2xl mb-6">{language === 'es' ? 'Seguridad y Llaves' : 'Security & Keys'}</h4>
                   <form 
@@ -244,7 +269,7 @@ export function DashboardClient({ user }: { user: any }) {
       </main>
 
       {/* Bottom Navigation NavBar (Mobile only) */}
-      <nav className="fixed bottom-0 w-full z-50 bg-surface/80 backdrop-blur-2xl border-t border-white/5 shadow-[0_-10px_40px_rgba(236,178,255,0.05)] flex justify-around items-center h-20 px-4 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-2xl border-t border-white/5 shadow-[0_-10px_40px_rgba(212,178,255,0.05)] flex justify-around items-center h-20 px-4 md:hidden">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -256,7 +281,7 @@ export function DashboardClient({ user }: { user: any }) {
             >
               <Icon className={`w-6 h-6 group-active:scale-90 transition-transform duration-200 ${isActive ? 'text-primary' : ''}`} />
               {isActive && (
-                <div className="absolute -bottom-2 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(236,178,255,0.8)]"></div>
+                <div className="absolute -bottom-2 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(212,178,255,0.8)]"></div>
               )}
             </button>
           );

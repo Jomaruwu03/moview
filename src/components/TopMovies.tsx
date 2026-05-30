@@ -11,7 +11,8 @@ import { useLanguage } from '@/context/LanguageContext';
 // Función auxiliar para obtener Base64
 async function getBase64(url: string) {
   try {
-    const res = await fetch(url, { mode: 'cors' });
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
     const blob = await res.blob();
     return new Promise<string>((resolve) => {
       const reader = new FileReader();
@@ -242,7 +243,7 @@ export function TopMovies({ user }: { user: any }) {
           <button 
             onClick={exportAsImage}
             disabled={isExporting}
-            className="px-8 py-3 border-[0.5px] border-primary/40 font-body text-[10px] uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(236,178,255,0.2)] transition-all duration-500 cubic-out flex items-center gap-3 w-fit"
+            className="px-8 py-3 border-[0.5px] border-primary/40 font-body text-[10px] uppercase tracking-[0.2em] text-on-surface hover:bg-primary hover:text-on-primary hover:shadow-[0_0_30px_rgba(212,178,255,0.2)] transition-all duration-500 cubic-out flex items-center gap-3 w-fit"
           >
             {isExporting ? <Download className="w-4 h-4 animate-bounce" /> : <Share2 className="w-4 h-4" />}
             {isExporting ? (language === 'es' ? 'Preparando...' : 'Preparing...') : (language === 'es' ? 'Exportar Editorial' : 'Export Editorial')}
@@ -295,9 +296,9 @@ export function TopMovies({ user }: { user: any }) {
               onClick={() => setIsAdding(true)}
               className="w-full aspect-[2/3] border-[0.5px] border-dashed border-white/10 hover:border-primary/40 rounded-[2rem] flex flex-col items-center justify-center bg-white/[0.02] hover:bg-primary/[0.03] transition-all duration-700 group overflow-hidden relative"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(236,178,255,0.03),_transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(212,178,255,0.03),_transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               
-              <div className="metallic-plate p-5 rounded-full mb-4 group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(236,178,255,0.1)] transition-all duration-500 relative z-10">
+              <div className="metallic-plate p-5 rounded-full mb-4 group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(212,178,255,0.1)] transition-all duration-500 relative z-10">
                 <Plus className="w-6 h-6 text-on-surface-variant group-hover:text-primary transition-colors" />
               </div>
               
@@ -326,7 +327,7 @@ export function TopMovies({ user }: { user: any }) {
           style={{ width: '1080px', height: '1920px', backgroundColor: '#000000' }}
         >
           {/* Fondo sutil con gradiente y textura */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(236,178,255,0.05),_transparent_70%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(212,178,255,0.05),_transparent_70%)]"></div>
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
 
           {/* Header Editorial */}

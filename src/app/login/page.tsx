@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
@@ -13,10 +13,24 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [isSignupMode, setIsSignupMode] = useState(false)
   
   const [isLoading, setIsLoading] = useState<'login' | 'signup' | null>(null)
 
   const supabase = createClient()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const errorMsg = params.get('error') || params.get('message')
+      if (errorMsg) {
+        toast.error(language === 'es' ? 'Error de verificación' : 'Verification error', {
+          description: decodeURIComponent(errorMsg).replace(/\+/g, ' ')
+        })
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [language])
 
   const validate = (isSignup: boolean) => {
     if (!email || !email.includes('@')) {
@@ -27,9 +41,20 @@ export default function LoginPage() {
       toast.error(language === 'es' ? 'Contraseña muy corta' : 'Password too short', { description: language === 'es' ? 'Tu contraseña debe tener al menos 6 caracteres.' : 'Your password must be at least 6 characters long.' })
       return false
     }
-    if (isSignup && !username) {
-      toast.error(language === 'es' ? 'Falta usuario' : 'Missing username', { description: language === 'es' ? 'Por favor, escoge un nombre de usuario.' : 'Please choose a username.' })
-      return false
+    if (isSignup) {
+      if (!username) {
+        toast.error(language === 'es' ? 'Falta usuario' : 'Missing username', { description: language === 'es' ? 'Por favor, escoge un nombre de usuario.' : 'Please choose a username.' })
+        return false
+      }
+      if (username.length < 3 || username.length > 20) {
+        toast.error(language === 'es' ? 'Usuario inválido' : 'Invalid username', { description: language === 'es' ? 'El usuario debe tener entre 3 y 20 caracteres.' : 'Username must be between 3 and 20 characters.' })
+        return false
+      }
+      const usernameRegex = /^[a-zA-Z0-9_-]+$/
+      if (!usernameRegex.test(username)) {
+        toast.error(language === 'es' ? 'Usuario inválido' : 'Invalid username', { description: language === 'es' ? 'Solo se permiten letras, números, guiones y guiones bajos.' : 'Only letters, numbers, hyphens, and underscores are allowed.' })
+        return false
+      }
     }
     return true
   }
@@ -65,10 +90,29 @@ export default function LoginPage() {
 
     setIsLoading('signup')
     try {
+      // 1. Check if username is already taken
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle()
+
+      if (existingUser) {
+        toast.error(
+          language === 'es' ? 'Usuario no disponible' : 'Username taken',
+          { description: language === 'es' ? 'Este nombre de usuario ya está registrado.' : 'This username is already taken.' }
+        )
+        setIsLoading(null)
+        return
+      }
+
+      // 2. Perform sign up with redirect options
+      const redirectUrl = `${window.location.origin}/auth/callback`
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             username: username || email.split('@')[0],
             avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || email}`
@@ -83,7 +127,14 @@ export default function LoginPage() {
         router.push('/')
         router.refresh()
       } else {
-        toast.info(language === 'es' ? 'Verifica tu correo' : 'Verify your email', { description: language === 'es' ? 'Por seguridad, revisa tu bandeja de entrada para activar tu cuenta. Si desactivas esta opción en Supabase, entrarás automáticamente.' : 'For security, check your inbox to activate your account. If you disable this in Supabase, you will log in automatically.' })
+        toast.info(
+          language === 'es' ? 'Verifica tu correo' : 'Verify your email',
+          {
+            description: language === 'es'
+              ? 'Te hemos enviado un correo de confirmación. Por favor, revisa tu bandeja de entrada (y la carpeta de spam) para activar tu cuenta.'
+              : 'We have sent you a confirmation email. Please check your inbox (and spam folder) to activate your account.'
+          }
+        )
       }
     } catch (err: any) {
       toast.error(language === 'es' ? 'Error inesperado' : 'Unexpected error', { description: err?.message || (language === 'es' ? 'No pudimos conectarnos.' : 'We could not connect.') })
@@ -143,10 +194,37 @@ export default function LoginPage() {
         <div className="p-8 sm:p-16 flex flex-col justify-center">
           <div className="lg:hidden text-center mb-10">
             <div className="flex justify-center mb-4">
-              <Cat className="w-12 h-12 text-primary" />
+              <Cat className="w-12 h-12 text-primary animate-pulse" />
             </div>
-            <h1 className="font-display text-5xl uppercase tracking-widest text-primary mb-4">MEOWIEW</h1>
-            <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">Editorial Cinema Platform</p>
+            <h1 className="font-display text-5xl uppercase tracking-widest text-primary mb-2">MEOWIEW</h1>
+            <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant mb-6">Editorial Cinema Platform</p>
+            <p className="font-body text-xs text-on-surface-variant/80 max-w-sm mx-auto leading-relaxed border-t border-white/5 pt-4">
+              {language === 'es' 
+                ? 'Tu espacio personal para reseñar películas, organizar tu Top 5 y descubrir el séptimo arte con estilo editorial.' 
+                : 'Your personal space to review movies, organize your Top 5, and discover cinema with an editorial style.'}
+            </p>
+          </div>
+
+          {/* Login / Register Switch */}
+          <div className="flex bg-white/5 border border-white/10 p-1 rounded-full mb-8">
+            <button
+              type="button"
+              onClick={() => setIsSignupMode(false)}
+              className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
+                !isSignupMode ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
+              }`}
+            >
+              {language === 'es' ? 'Iniciar Sesión' : 'Log In'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSignupMode(true)}
+              className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
+                isSignupMode ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
+              }`}
+            >
+              {language === 'es' ? 'Registrarse' : 'Sign Up'}
+            </button>
           </div>
 
           <form className="flex flex-col w-full gap-6">
@@ -163,19 +241,21 @@ export default function LoginPage() {
                 />
               </div>
               
-              <div className="group">
-                <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="username">
-                  {language === 'es' ? 'Usuario ' : 'Username '}
-                  <span className="text-white/20 normal-case tracking-normal">{language === 'es' ? '(solo registro)' : '(signup only)'}</span>
-                </label>
-                <input
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500 placeholder:text-white/20"
-                  name="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="cinemaphile"
-                />
-              </div>
+              {isSignupMode && (
+                <div className="group animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="username">
+                    {language === 'es' ? 'Usuario' : 'Username'}
+                  </label>
+                  <input
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500 placeholder:text-white/20"
+                    name="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="cinemaphile"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="group">
                 <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="password">{language === 'es' ? 'Contraseña' : 'Password'}</label>
@@ -192,21 +272,25 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col gap-4 mt-4">
-              <button
-                onClick={handleLogin}
-                disabled={isLoading !== null}
-                className="w-full py-5 bg-primary text-on-primary font-body text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(236,178,255,0.2)] hover:shadow-[0_15px_40px_rgba(236,178,255,0.3)] hover:-translate-y-0.5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {isLoading === 'login' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Entrar a la Sala' : 'Enter the Theater')}
-              </button>
-              
-              <button
-                onClick={handleSignup}
-                disabled={isLoading !== null}
-                className="w-full py-5 border-[0.5px] border-white/10 font-body text-xs uppercase tracking-[0.2em] text-on-surface hover:bg-white/5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {isLoading === 'signup' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Crear una Cuenta' : 'Sign Up')}
-              </button>
+              {!isSignupMode ? (
+                <button
+                  type="submit"
+                  onClick={handleLogin}
+                  disabled={isLoading !== null}
+                  className="w-full py-5 bg-primary text-on-primary font-body text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(212,178,255,0.2)] hover:shadow-[0_15px_40px_rgba(212,178,255,0.3)] hover:-translate-y-0.5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {isLoading === 'login' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Entrar a la Sala' : 'Enter the Theater')}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  onClick={handleSignup}
+                  disabled={isLoading !== null}
+                  className="w-full py-5 bg-primary text-on-primary font-body text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(212,178,255,0.2)] hover:shadow-[0_15px_40px_rgba(212,178,255,0.3)] hover:-translate-y-0.5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {isLoading === 'signup' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Crear una Cuenta' : 'Sign Up')}
+                </button>
+              )}
             </div>
           </form>
           
