@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { ReviewBuilder } from '@/components/ReviewBuilder';
 import { TopMovies } from '@/components/TopMovies';
+import { CustomLists } from '@/components/CustomLists';
 import { DailyRecommendation } from '@/components/DailyRecommendation';
 import { AdminPanel } from '@/components/AdminPanel';
-import { Clapperboard, Star, User, LogOut, Menu, X, Languages, Calendar, Cat, Shield } from 'lucide-react';
+import { Clapperboard, Star, User, LogOut, Menu, X, Languages, Calendar, Cat, Shield, List } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/LanguageContext';
 
-type Tab = 'review' | 'top5' | 'daily' | 'profile' | 'admin';
+type Tab = 'review' | 'top5' | 'lists' | 'daily' | 'profile' | 'admin';
 
 export function DashboardClient({ user }: { user: any }) {
   const [currentUser, setCurrentUser] = useState(user);
@@ -25,6 +26,7 @@ export function DashboardClient({ user }: { user: any }) {
   const tabs = [
     { id: 'review', label: t('sidebar.review'), icon: Star },
     { id: 'top5', label: t('sidebar.top5'), icon: Clapperboard },
+    { id: 'lists', label: t('sidebar.lists'), icon: List },
     { id: 'daily', label: t('sidebar.daily'), icon: Calendar },
     { id: 'profile', label: t('sidebar.profile'), icon: User },
   ];
@@ -151,6 +153,12 @@ export function DashboardClient({ user }: { user: any }) {
               <div className="w-12 h-[1px] bg-primary/30 mt-8"></div>
             </div>
             <TopMovies user={currentUser} />
+          </div>
+        )}
+
+        {activeTab === 'lists' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 cubic-out">
+            <CustomLists user={currentUser} />
           </div>
         )}
 
