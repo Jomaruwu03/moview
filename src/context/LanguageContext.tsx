@@ -14,6 +14,7 @@ const translations = {
   es: {
     'sidebar.review': 'Reseñas',
     'sidebar.top5': 'Top Personal',
+    'sidebar.lists': 'Mis Colecciones',
     'sidebar.daily': 'Película Diaria',
     'sidebar.profile': 'Perfil',
     'sidebar.logout': 'Cerrar Sesión',
@@ -34,6 +35,7 @@ const translations = {
   en: {
     'sidebar.review': 'Reviews',
     'sidebar.top5': 'Personal Top',
+    'sidebar.lists': 'My Collections',
     'sidebar.daily': 'Daily Movie',
     'sidebar.profile': 'Profile',
     'sidebar.logout': 'Sign Out',
