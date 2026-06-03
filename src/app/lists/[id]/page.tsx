@@ -148,7 +148,7 @@ export default async function ListPage({ params }: PageProps) {
                 
                 {/* Ranking de gran tamaño */}
                 <div className="absolute top-6 right-8 md:top-auto md:bottom-8 md:right-10 font-display text-[80px] md:text-[120px] italic text-primary/10 select-none pointer-events-none leading-none group-hover:text-primary/20 transition-colors">
-                  0{item.rank}
+                  {item.rank < 10 ? '0' : ''}{item.rank}
                 </div>
 
                 {/* Carátula */}
