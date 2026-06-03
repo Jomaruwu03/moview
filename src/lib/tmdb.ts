@@ -35,6 +35,28 @@ export const tmdb = {
     });
     return res.json();
   },
+  searchTV: async (query: string, lang = 'es') => {
+    const language = lang === 'en' ? 'en-US' : 'es-ES';
+    const res = await fetch(`${BASE_URL}/search/tv?query=${encodeURIComponent(query)}&language=${language}`, {
+      headers: {
+        Authorization: `Bearer ${TMDB_API_KEY}`,
+        accept: 'application/json',
+      },
+      next: { revalidate: 86400 }, // Cache por 24 horas
+    });
+    return res.json();
+  },
+  getTVShow: async (id: string, lang = 'es') => {
+    const language = lang === 'en' ? 'en-US' : 'es-ES';
+    const res = await fetch(`${BASE_URL}/tv/${id}?language=${language}`, {
+      headers: {
+        Authorization: `Bearer ${TMDB_API_KEY}`,
+        accept: 'application/json',
+      },
+      next: { revalidate: 86400 }, // Cache por 24 horas
+    });
+    return res.json();
+  },
   getTopRated: async (page = 1, lang = 'es') => {
     const language = lang === 'en' ? 'en-US' : 'es-ES';
     const res = await fetch(`${BASE_URL}/movie/top_rated?language=${language}&page=${page}`, {

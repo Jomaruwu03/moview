@@ -13,9 +13,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
-  const [isSignupMode, setIsSignupMode] = useState(false)
+  const [viewMode, setViewMode] = useState<'login' | 'signup' | 'forgot-password'>('login')
+  const [rememberMe, setRememberMe] = useState(false)
   
-  const [isLoading, setIsLoading] = useState<'login' | 'signup' | null>(null)
+  const [isLoading, setIsLoading] = useState<'login' | 'signup' | 'forgot' | null>(null)
 
   const supabase = createClient()
 
@@ -28,6 +29,16 @@ export default function LoginPage() {
           description: decodeURIComponent(errorMsg).replace(/\+/g, ' ')
         })
         window.history.replaceState({}, document.title, window.location.pathname)
+      }
+
+      const rememberedEmail = localStorage.getItem('meowiew_remembered_email')
+      const rememberedPassword = localStorage.getItem('meowiew_remembered_password')
+      if (rememberedEmail) {
+        setEmail(rememberedEmail)
+        setRememberMe(true)
+      }
+      if (rememberedPassword) {
+        setPassword(rememberedPassword)
       }
     }
   }, [language])
@@ -73,6 +84,13 @@ export default function LoginPage() {
       if (error) {
         toast.error(language === 'es' ? 'Error al iniciar sesión' : 'Login error', { description: error.message === 'Invalid login credentials' ? (language === 'es' ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.') : error.message })
       } else {
+        if (rememberMe) {
+          localStorage.setItem('meowiew_remembered_email', email)
+          localStorage.setItem('meowiew_remembered_password', password)
+        } else {
+          localStorage.removeItem('meowiew_remembered_email')
+          localStorage.removeItem('meowiew_remembered_password')
+        }
         toast.success(language === 'es' ? '¡Bienvenido de vuelta!' : 'Welcome back!')
         router.push('/')
         router.refresh()
@@ -143,6 +161,35 @@ export default function LoginPage() {
     }
   }
 
+  const handleForgotPassword = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!email || !email.includes('@')) {
+      toast.error(language === 'es' ? 'Correo inválido' : 'Invalid email', { description: language === 'es' ? 'Por favor, ingresa un correo electrónico válido.' : 'Please enter a valid email address.' })
+      return
+    }
+
+    setIsLoading('login')
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/?tab=profile`
+      })
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success(
+          language === 'es' 
+            ? '¡Enlace enviado! Revisa tu bandeja de entrada.' 
+            : 'Link sent! Check your inbox.'
+        )
+        setViewMode('login')
+      }
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setIsLoading(null)
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col w-full items-center justify-center min-h-screen p-4 bg-background relative overflow-hidden">
       {/* Background Decorative Elements */}
@@ -206,26 +253,39 @@ export default function LoginPage() {
           </div>
 
           {/* Login / Register Switch */}
-          <div className="flex bg-white/5 border border-white/10 p-1 rounded-full mb-8">
-            <button
-              type="button"
-              onClick={() => setIsSignupMode(false)}
-              className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
-                !isSignupMode ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
-              }`}
-            >
-              {language === 'es' ? 'Iniciar Sesión' : 'Log In'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsSignupMode(true)}
-              className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
-                isSignupMode ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
-              }`}
-            >
-              {language === 'es' ? 'Registrarse' : 'Sign Up'}
-            </button>
-          </div>
+          {viewMode !== 'forgot-password' ? (
+            <div className="flex bg-white/5 border border-white/10 p-1 rounded-full mb-8">
+              <button
+                type="button"
+                onClick={() => setViewMode('login')}
+                className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
+                  viewMode === 'login' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
+                }`}
+              >
+                {language === 'es' ? 'Iniciar Sesión' : 'Log In'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('signup')}
+                className={`flex-1 py-3 rounded-full font-body text-xs uppercase tracking-widest transition-all duration-300 ${
+                  viewMode === 'signup' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant hover:text-white'
+                }`}
+              >
+                {language === 'es' ? 'Registrarse' : 'Sign Up'}
+              </button>
+            </div>
+          ) : (
+            <div className="mb-8 text-center">
+              <h2 className="font-display text-3xl text-white italic mb-2">
+                {language === 'es' ? 'Recuperar Contraseña' : 'Recover Password'}
+              </h2>
+              <p className="font-body text-xs text-on-surface-variant">
+                {language === 'es' 
+                  ? 'Te enviaremos un enlace para que puedas reestablecer tu acceso.' 
+                  : 'We will send you a link to reset your access.'}
+              </p>
+            </div>
+          )}
 
           <form className="flex flex-col w-full gap-6">
             <div className="space-y-6 mb-8">
@@ -241,7 +301,7 @@ export default function LoginPage() {
                 />
               </div>
               
-              {isSignupMode && (
+              {viewMode === 'signup' && (
                 <div className="group animate-in fade-in slide-in-from-top-2 duration-300">
                   <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="username">
                     {language === 'es' ? 'Usuario' : 'Username'}
@@ -257,22 +317,46 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <div className="group">
-                <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="password">{language === 'es' ? 'Contraseña' : 'Password'}</label>
-                <input
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500 placeholder:text-white/20"
-                  type="password"
-                  name="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
+              {viewMode !== 'forgot-password' && (
+                <div className="group">
+                  <label className="block font-body text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-3 group-focus-within:text-primary transition-colors" htmlFor="password">{language === 'es' ? 'Contraseña' : 'Password'}</label>
+                  <input
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500 placeholder:text-white/20"
+                    type="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              )}
             </div>
 
+            {viewMode === 'login' && (
+              <div className="flex justify-between items-center mb-4">
+                <label className="flex items-center gap-3 cursor-pointer group text-xs text-on-surface-variant hover:text-white transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 focus:ring-offset-0 w-4 h-4"
+                  />
+                  <span>{language === 'es' ? 'Recordar credenciales' : 'Remember credentials'}</span>
+                </label>
+                
+                <button
+                  type="button"
+                  onClick={() => setViewMode('forgot-password')}
+                  className="font-body text-[9px] uppercase tracking-widest text-primary/60 hover:text-primary transition-colors border-b border-primary/20"
+                >
+                  {language === 'es' ? '¿Olvidaste tu contraseña?' : 'Forgot password?'}
+                </button>
+              </div>
+            )}
+
             <div className="flex flex-col gap-4 mt-4">
-              {!isSignupMode ? (
+              {viewMode === 'login' && (
                 <button
                   type="submit"
                   onClick={handleLogin}
@@ -281,7 +365,9 @@ export default function LoginPage() {
                 >
                   {isLoading === 'login' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Entrar a la Sala' : 'Enter the Theater')}
                 </button>
-              ) : (
+              )}
+              
+              {viewMode === 'signup' && (
                 <button
                   type="submit"
                   onClick={handleSignup}
@@ -290,6 +376,27 @@ export default function LoginPage() {
                 >
                   {isLoading === 'signup' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Crear una Cuenta' : 'Sign Up')}
                 </button>
+              )}
+
+              {viewMode === 'forgot-password' && (
+                <div className="space-y-4">
+                  <button
+                    type="submit"
+                    onClick={handleForgotPassword}
+                    disabled={isLoading !== null}
+                    className="w-full py-5 bg-primary text-on-primary font-body text-xs uppercase tracking-[0.2em] font-bold shadow-[0_10px_30px_rgba(212,178,255,0.2)] hover:shadow-[0_15px_40px_rgba(212,178,255,0.3)] hover:-translate-y-0.5 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {isLoading === 'login' ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === 'es' ? 'Enviar Enlace' : 'Send Recovery Link')}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('login')}
+                    className="w-full py-4 border border-white/10 hover:border-white/20 text-on-surface-variant hover:text-white rounded-2xl font-body text-[10px] uppercase tracking-widest transition-all duration-300 bg-transparent flex items-center justify-center"
+                  >
+                    {language === 'es' ? 'Volver al Inicio de Sesión' : 'Back to Log In'}
+                  </button>
+                </div>
               )}
             </div>
           </form>
