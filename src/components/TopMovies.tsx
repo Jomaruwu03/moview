@@ -30,6 +30,7 @@ export function TopMovies({ user }: { user: any }) {
   const [isAdding, setIsAdding] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
+  const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
   const supabase = createClient();
   const { language, t } = useLanguage();
 
@@ -50,7 +51,11 @@ export function TopMovies({ user }: { user: any }) {
       if (data) {
         const loadedFavs = [];
         for (const item of data) {
-          const movie = await tmdb.getMovie(item.tmdb_id.toString());
+          const isTV = item.tmdb_id < 0;
+          const realTmdbId = Math.abs(item.tmdb_id);
+          const movie = isTV 
+            ? await tmdb.getTVShow(realTmdbId.toString())
+            : await tmdb.getMovie(realTmdbId.toString());
           loadedFavs.push(movie);
         }
         setFavorites(loadedFavs);
@@ -62,11 +67,13 @@ export function TopMovies({ user }: { user: any }) {
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!query.trim()) return setResults([]);
-      const data = await tmdb.searchMovies(query, language);
+      const data = mediaType === 'movie'
+        ? await tmdb.searchMovies(query, language)
+        : await tmdb.searchTV(query, language);
       setResults(data.results || []);
     }, 400);
     return () => clearTimeout(timer);
-  }, [query, language]);
+  }, [query, language, mediaType]);
 
   // Precargar imágenes a Base64 cuando cambian los favoritos
   useEffect(() => {
@@ -87,11 +94,11 @@ export function TopMovies({ user }: { user: any }) {
   const handleSelectMovie = async (movie: any) => {
     if (favorites.length >= 5) return;
     
-    // Evitar añadir películas duplicadas
+    // Evitar añadir duplicadas
     const isDuplicate = favorites.some((fav) => fav.id === movie.id);
     if (isDuplicate) {
-      toast.error('Película duplicada', {
-        description: 'Esta película ya se encuentra en tu Top 5. Elige otra diferente.',
+      toast.error(language === 'es' ? 'Obra duplicada' : 'Duplicate selection', {
+        description: language === 'es' ? 'Esta obra ya se encuentra en tu Top 5.' : 'This work is already in your Top 5.',
       });
       return;
     }
@@ -102,27 +109,32 @@ export function TopMovies({ user }: { user: any }) {
     setQuery('');
     
     // Save to DB (Movies Cache)
-    const releaseDate = movie.release_date && movie.release_date.trim() !== '' ? movie.release_date : null;
+    const isTV = mediaType === 'tv' || movie.first_air_date !== undefined;
+    const dbId = isTV ? -movie.id : movie.id;
+    const title = movie.title || movie.name;
+    const releaseDate = (movie.release_date || movie.first_air_date || '').trim() !== '' 
+      ? (movie.release_date || movie.first_air_date) 
+      : null;
     
     // 1. Check if movie already exists to avoid UPSERT RLS issues
     const { data: existingMovie } = await supabase
       .from('movies')
       .select('tmdb_id')
-      .eq('tmdb_id', movie.id)
+      .eq('tmdb_id', dbId)
       .single();
 
     // 2. Insert only if it doesn't exist
     if (!existingMovie) {
       const { error: movieError } = await supabase.from('movies').insert({
-        tmdb_id: movie.id,
-        title: movie.title,
+        tmdb_id: dbId,
+        title: title,
         poster_path: movie.poster_path,
         release_date: releaseDate
       });
 
       if (movieError) {
         console.error("Movie Insert Error:", movieError);
-        toast.error('Error al guardar película', { description: movieError.message || 'Error desconocido' });
+        toast.error('Error al guardar película/serie', { description: movieError.message || 'Error desconocido' });
         // Revertir optimísticamente
         const revertedFavs = favorites.filter(f => f.id !== movie.id);
         setFavorites(revertedFavs);
@@ -132,19 +144,18 @@ export function TopMovies({ user }: { user: any }) {
 
     const { error: favError } = await supabase.from('favorite_movies').upsert({
       user_id: user.id,
-      tmdb_id: movie.id,
+      tmdb_id: dbId,
       rank: newFavs.length
     }, { onConflict: 'user_id, rank' });
 
     if (favError) {
       console.error(favError);
       toast.error('Error al guardar tu Top', { description: favError.message });
-      // Revertir optimísticamente
       setFavorites(favorites);
       return;
     }
 
-    toast.success('Añadida al Top', { description: `${movie.title} guardada en tu perfil.` });
+    toast.success('Añadida al Top', { description: `${title} guardada en tu perfil.` });
   };
 
   const removeFavorite = async (index: number) => {
@@ -152,7 +163,6 @@ export function TopMovies({ user }: { user: any }) {
     const newFavs = favorites.filter((_, i) => i !== index);
     setFavorites(newFavs);
 
-    // Re-sync all ranks to maintain order 1 to length
     const { error: deleteError } = await supabase.from('favorite_movies').delete().eq('user_id', user.id);
     if (deleteError) {
       console.error(deleteError);
@@ -162,9 +172,11 @@ export function TopMovies({ user }: { user: any }) {
 
     let hasError = false;
     for (let i = 0; i < newFavs.length; i++) {
+      const isTV = newFavs[i].first_air_date !== undefined;
+      const dbId = isTV ? -newFavs[i].id : newFavs[i].id;
       const { error: insertError } = await supabase.from('favorite_movies').insert({
         user_id: user.id,
-        tmdb_id: newFavs[i].id,
+        tmdb_id: dbId,
         rank: i + 1
       });
       if (insertError) hasError = true;
@@ -173,7 +185,7 @@ export function TopMovies({ user }: { user: any }) {
     if (hasError) {
       toast.error('Ocurrió un problema al reordenar tu Top.');
     } else {
-      toast.info('Película eliminada', { description: `${movieRemoved.title} removida de tu lista.` });
+      toast.info('Eliminada del Top', { description: `${movieRemoved.title || movieRemoved.name} removida de tu lista.` });
     }
   };
 
@@ -261,7 +273,7 @@ export function TopMovies({ user }: { user: any }) {
             <div className="relative aspect-[2/3] overflow-hidden rounded-[2rem] border border-white/5 shadow-2xl transition-all duration-700 cubic-out group-hover:border-primary/30 group-hover:shadow-[0_30px_60px_rgba(0,0,0,0.6)] group-hover:-translate-y-2">
               <img 
                 src={tmdb.getImageUrl(movie.poster_path, 'w500')} 
-                alt={movie.title}
+                alt={movie.title || movie.name}
                 className="w-full h-full object-cover transition-transform duration-[1500ms] cubic-out group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
@@ -274,9 +286,9 @@ export function TopMovies({ user }: { user: any }) {
               </div>
 
               <div className="absolute bottom-6 left-6 right-6">
-                <p className="font-display text-xl text-white italic leading-tight mb-1">{movie.title}</p>
+                <p className="font-display text-xl text-white italic leading-tight mb-1">{movie.title || movie.name}</p>
                 <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant opacity-60">
-                  {movie.release_date?.split('-')[0]}
+                  {(movie.release_date || movie.first_air_date)?.split('-')[0]}
                 </p>
               </div>
 
@@ -357,7 +369,7 @@ export function TopMovies({ user }: { user: any }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 <div className="absolute bottom-10 left-10">
                   <span className="font-display text-[100px] text-primary/40 italic leading-none mb-4 block">01</span>
-                  <h2 className="font-display text-5xl text-white italic leading-tight">{favorites[0].title}</h2>
+                  <h2 className="font-display text-5xl text-white italic leading-tight">{favorites[0].title || favorites[0].name}</h2>
                 </div>
               </div>
             )}
@@ -369,7 +381,7 @@ export function TopMovies({ user }: { user: any }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 <div className="absolute bottom-8 left-8">
                   <span className="font-display text-6xl text-primary/40 italic leading-none mb-2 block">02</span>
-                  <h2 className="font-display text-3xl text-white italic">{favorites[1].title}</h2>
+                  <h2 className="font-display text-3xl text-white italic">{favorites[1].title || favorites[1].name}</h2>
                 </div>
               </div>
             )}
@@ -381,7 +393,7 @@ export function TopMovies({ user }: { user: any }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 <div className="absolute bottom-8 left-8">
                   <span className="font-display text-6xl text-primary/40 italic leading-none mb-2 block">03</span>
-                  <h2 className="font-display text-3xl text-white italic">{favorites[2].title}</h2>
+                  <h2 className="font-display text-3xl text-white italic">{favorites[2].title || favorites[2].name}</h2>
                 </div>
               </div>
             )}
@@ -393,7 +405,7 @@ export function TopMovies({ user }: { user: any }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 <div className="absolute bottom-10 left-10">
                   <span className="font-display text-[80px] text-primary/40 italic leading-none mb-4 block">04</span>
-                  <h2 className="font-display text-4xl text-white italic leading-tight">{favorites[3].title}</h2>
+                  <h2 className="font-display text-4xl text-white italic leading-tight">{favorites[3].title || favorites[3].name}</h2>
                 </div>
               </div>
             )}
@@ -405,7 +417,7 @@ export function TopMovies({ user }: { user: any }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
                 <div className="absolute bottom-10 left-10">
                   <span className="font-display text-[80px] text-primary/40 italic leading-none mb-4 block">05</span>
-                  <h2 className="font-display text-4xl text-white italic leading-tight">{favorites[4].title}</h2>
+                  <h2 className="font-display text-4xl text-white italic leading-tight">{favorites[4].title || favorites[4].name}</h2>
                 </div>
               </div>
             )}
@@ -439,11 +451,34 @@ export function TopMovies({ user }: { user: any }) {
               </div>
               <button onClick={() => setIsAdding(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5 text-on-surface-variant" /></button>
             </div>
+            <div className="flex gap-4 p-1 bg-white/5 border border-white/5 rounded-2xl mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaType('movie');
+                  setResults([]);
+                }}
+                className={`flex-1 py-3 text-center rounded-xl font-body text-[10px] uppercase tracking-widest transition-all duration-300 ${mediaType === 'movie' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-on-surface-variant hover:text-white'}`}
+              >
+                {language === 'es' ? 'Películas' : 'Movies'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaType('tv');
+                  setResults([]);
+                }}
+                className={`flex-1 py-3 text-center rounded-xl font-body text-[10px] uppercase tracking-widest transition-all duration-300 ${mediaType === 'tv' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-on-surface-variant hover:text-white'}`}
+              >
+                {language === 'es' ? 'Series / Animes' : 'TV Shows / Anime'}
+              </button>
+            </div>
+
             <div className="relative mb-8">
               <input 
                 type="text" autoFocus
                 value={query} onChange={e => setQuery(e.target.value)}
-                placeholder={t('search.placeholder')}
+                placeholder={mediaType === 'movie' ? t('search.placeholder') : (language === 'es' ? 'Buscar series o animes...' : 'Search series or anime...')}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 font-body text-sm text-white outline-none focus:border-primary/40 focus:bg-white/10 transition-all"
               />
               <Search className="absolute left-4 top-4 w-5 h-5 text-on-surface-variant" />
@@ -463,8 +498,8 @@ export function TopMovies({ user }: { user: any }) {
                     )}
                   </div>
                   <div>
-                    <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{m.title}</p>
-                    <p className="font-body text-xs text-on-surface-variant">{m.release_date?.split('-')[0]}</p>
+                    <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{m.title || m.name}</p>
+                    <p className="font-body text-xs text-on-surface-variant">{(m.release_date || m.first_air_date)?.split('-')[0]}</p>
                   </div>
                 </button>
               )) : query.length > 2 ? (

@@ -26,6 +26,7 @@ export function CustomLists({ user }: { user: any }) {
   const [isSearching, setIsSearching] = useState(false);
   const [activeRankSlot, setActiveRankSlot] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
 
   useEffect(() => {
     fetchLists();
@@ -50,13 +51,15 @@ export function CustomLists({ user }: { user: any }) {
     }
   };
 
-  // Search movies
+  // Search movies/tv
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!query.trim()) return setSearchResults([]);
       setIsSearching(true);
       try {
-        const data = await tmdb.searchMovies(query, language);
+        const data = mediaType === 'movie'
+          ? await tmdb.searchMovies(query, language)
+          : await tmdb.searchTV(query, language);
         setSearchResults(data.results || []);
       } catch (err) {
         console.error(err);
@@ -65,7 +68,7 @@ export function CustomLists({ user }: { user: any }) {
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [query, language]);
+  }, [query, language, mediaType]);
 
   const handleCreateNew = () => {
     setTitle('');
@@ -93,7 +96,11 @@ export function CustomLists({ user }: { user: any }) {
 
       const loadedMovies = [];
       for (const item of data || []) {
-        const movieDetail = await tmdb.getMovie(item.tmdb_id.toString(), language);
+        const isTV = item.tmdb_id < 0;
+        const realTmdbId = Math.abs(item.tmdb_id);
+        const movieDetail = isTV 
+          ? await tmdb.getTVShow(realTmdbId.toString(), language)
+          : await tmdb.getMovie(realTmdbId.toString(), language);
         loadedMovies.push({
           movie: movieDetail,
           rank: item.rank,
@@ -223,18 +230,23 @@ export function CustomLists({ user }: { user: any }) {
 
       // Ensure all selected movies are in the main 'movies' cache first
       for (const item of listMovies) {
-        const releaseDate = item.movie.release_date && item.movie.release_date.trim() !== '' ? item.movie.release_date : null;
+        const isTV = item.movie.first_air_date !== undefined;
+        const dbId = isTV ? -item.movie.id : item.movie.id;
+        const title = item.movie.title || item.movie.name;
+        const releaseDate = (item.movie.release_date || item.movie.first_air_date || '').trim() !== '' 
+          ? (item.movie.release_date || item.movie.first_air_date) 
+          : null;
         
         const { data: existingMovie } = await supabase
           .from('movies')
           .select('tmdb_id')
-          .eq('tmdb_id', item.movie.id)
+          .eq('tmdb_id', dbId)
           .single();
-
+          
         if (!existingMovie) {
           await supabase.from('movies').insert({
-            tmdb_id: item.movie.id,
-            title: item.movie.title,
+            tmdb_id: dbId,
+            title: title,
             poster_path: item.movie.poster_path,
             release_date: releaseDate
           });
@@ -242,12 +254,16 @@ export function CustomLists({ user }: { user: any }) {
       }
 
       // Bulk insert list movies
-      const insertData = listMovies.map(item => ({
-        list_id: listId,
-        tmdb_id: item.movie.id,
-        rank: item.rank,
-        user_note: item.user_note
-      }));
+      const insertData = listMovies.map(item => {
+        const isTV = item.movie.first_air_date !== undefined;
+        const dbId = isTV ? -item.movie.id : item.movie.id;
+        return {
+          list_id: listId,
+          tmdb_id: dbId,
+          rank: item.rank,
+          user_note: item.user_note
+        };
+      });
 
       const { error: moviesError } = await supabase
         .from('list_movies')
@@ -493,9 +509,9 @@ export function CustomLists({ user }: { user: any }) {
                           <div className="flex-1 flex flex-col justify-between">
                             <div className="flex justify-between items-start gap-4">
                               <div>
-                                <h4 className="font-display text-xl text-white italic leading-tight mb-1">{item.movie.title}</h4>
+                                <h4 className="font-display text-xl text-white italic leading-tight mb-1">{item.movie.title || item.movie.name}</h4>
                                 <p className="font-body text-[10px] uppercase tracking-wider text-on-surface-variant opacity-60">
-                                  {item.movie.release_date?.split('-')[0]}
+                                  {(item.movie.release_date || item.movie.first_air_date)?.split('-')[0]}
                                 </p>
                               </div>
                               <button 
@@ -532,10 +548,13 @@ export function CustomLists({ user }: { user: any }) {
                             </span>
                           </div>
                           <button
-                            onClick={() => setActiveRankSlot(rank)}
+                            onClick={() => {
+                              setMediaType('movie');
+                              setActiveRankSlot(rank);
+                            }}
                             className="px-4 py-2 border border-white/10 hover:border-primary/30 rounded-xl font-body text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-all duration-300"
                           >
-                            {language === 'es' ? 'Buscar Película' : 'Find Movie'}
+                            {language === 'es' ? 'Buscar Obra' : 'Find Media'}
                           </button>
                         </div>
                       )}
@@ -573,13 +592,36 @@ export function CustomLists({ user }: { user: any }) {
               </button>
             </div>
             
+            <div className="flex gap-4 p-1 bg-white/5 border border-white/5 rounded-2xl mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaType('movie');
+                  setSearchResults([]);
+                }}
+                className={`flex-1 py-3 text-center rounded-xl font-body text-[10px] uppercase tracking-widest transition-all duration-300 ${mediaType === 'movie' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-on-surface-variant hover:text-white'}`}
+              >
+                {language === 'es' ? 'Películas' : 'Movies'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaType('tv');
+                  setSearchResults([]);
+                }}
+                className={`flex-1 py-3 text-center rounded-xl font-body text-[10px] uppercase tracking-widest transition-all duration-300 ${mediaType === 'tv' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-on-surface-variant hover:text-white'}`}
+              >
+                {language === 'es' ? 'Series / Animes' : 'TV Shows / Anime'}
+              </button>
+            </div>
+
             <div className="relative mb-8">
               <input 
                 type="text" 
                 autoFocus
                 value={query} 
                 onChange={e => setQuery(e.target.value)}
-                placeholder={t('search.placeholder')}
+                placeholder={mediaType === 'movie' ? t('search.placeholder') : (language === 'es' ? 'Buscar series o animes...' : 'Search series or anime...')}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 font-body text-sm text-white outline-none focus:border-primary/40 focus:bg-white/10 transition-all"
               />
               <Search className="absolute left-4 top-4 w-5 h-5 text-on-surface-variant" />
@@ -605,8 +647,8 @@ export function CustomLists({ user }: { user: any }) {
                       )}
                     </div>
                     <div>
-                      <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{m.title}</p>
-                      <p className="font-body text-xs text-on-surface-variant">{m.release_date?.split('-')[0]}</p>
+                      <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{m.title || m.name}</p>
+                      <p className="font-body text-xs text-on-surface-variant">{(m.release_date || m.first_air_date)?.split('-')[0]}</p>
                     </div>
                   </button>
                 ))

@@ -8,7 +8,11 @@ export const metadata: Metadata = {
   description: 'Generador interactivo para crear, personalizar y compartir widgets de tus reseñas de películas favoritas.',
 };
 
-export default async function Home() {
+interface HomeProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,6 +20,9 @@ export default async function Home() {
   if (!user) {
     redirect('/login');
   }
+
+  const params = await searchParams;
+  const initialTab = (params.tab as string) || 'review';
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -29,5 +36,5 @@ export default async function Home() {
     avatar_url: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`
   };
 
-  return <DashboardClient user={activeUser} />;
+  return <DashboardClient user={activeUser} initialTab={initialTab} />;
 }

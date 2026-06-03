@@ -80,12 +80,26 @@ interface ShareWidgetProps {
 import { useLanguage } from '@/context/LanguageContext';
 import { toast } from 'sonner';
 
-export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 'poster', theme = 'modern' }: ShareWidgetProps) {
+export function ShareWidget({ movie, rating, reviewText = '', user, backgroundMode = 'poster', theme = 'modern' }: ShareWidgetProps) {
   const { language } = useLanguage();
   const widgetRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.3);
   const [isExporting, setIsExporting] = useState(false);
+
+  const getFontSizeClass = (text: string) => {
+    if (!text) return 'text-5xl';
+    if (text.length > 100) return 'text-2xl sm:text-3xl md:text-4xl';
+    if (text.length > 50) return 'text-3xl sm:text-4xl md:text-5xl';
+    return 'text-5xl';
+  };
+
+  const getNoirFontSizeClass = (text: string) => {
+    if (!text) return 'text-4xl';
+    if (text.length > 100) return 'text-xl sm:text-2xl md:text-3xl';
+    if (text.length > 50) return 'text-2xl sm:text-3xl md:text-4xl';
+    return 'text-4xl';
+  };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -96,7 +110,6 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
       }
     };
     updateScale();
-    // Use dynamic ResizeObserver to capture size changes accurately on all screens
     const observer = new ResizeObserver(updateScale);
     if (containerRef.current) observer.observe(containerRef.current);
     
@@ -107,7 +120,6 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
     };
   }, []);
 
-  // Precargar imágenes en Base64 para evitar problemas de CORS durante el export
   const backdropUrl = tmdb.getImageUrl(movie.backdrop_path, 'original');
   const posterUrl = tmdb.getImageUrl(movie.poster_path);
   
@@ -115,9 +127,9 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
   const poster = useImageBase64(posterUrl);
   const avatar = useImageBase64(user.avatar_url);
 
-  // Consideramos listo si no hay URL o si ya tenemos el base64
-  // No bloqueamos indefinidamente si una imagen falla (isLoading se vuelve false en catch)
   const isReadyToExport = !backdrop.isLoading && !poster.isLoading && !avatar.isLoading;
+  const movieTitle = movie.title || movie.name || '';
+  const movieYear = (movie.release_date || movie.first_air_date || '').split('-')[0];
 
   const exportImage = async () => {
     if (!widgetRef.current) return;
@@ -137,12 +149,9 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
     };
 
     try {
-      // Pequeño delay para asegurar renderizado
       await new Promise(resolve => setTimeout(resolve, 300));
-      
       const dataUrl = await toJpeg(widgetRef.current, options);
       
-      // Intentar compartir nativamente en móviles
       if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         try {
           const response = await fetch(dataUrl);
@@ -152,8 +161,8 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
               files: [file],
-              title: `Critique: ${movie.title}`,
-              text: language === 'es' ? `Mi reseña de ${movie.title} en MeoWiew` : `My review of ${movie.title} on MeoWiew`,
+              title: `Critique: ${movieTitle}`,
+              text: language === 'es' ? `Mi reseña de ${movieTitle} en MeoWiew` : `My review of ${movieTitle} on MeoWiew`,
             });
             toast.success(
               language === 'es' ? '¡Critique lista para compartir!' : 'Critique ready to share!',
@@ -172,7 +181,6 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
         }
       }
 
-      // Descarga convencional si no se pudo compartir
       const link = document.createElement('a');
       link.download = `critique-${movie.id}.jpeg`;
       link.href = dataUrl;
@@ -197,20 +205,6 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
   };
 
   const isDark = backgroundMode === 'dark';
-
-  const ticketMaskStyle = {
-    WebkitMaskImage: 'radial-gradient(circle at 0 0, transparent 60px, black 61px), radial-gradient(circle at 100% 0, transparent 60px, black 61px), radial-gradient(circle at 100% 100%, transparent 60px, black 61px), radial-gradient(circle at 0 100%, transparent 60px, black 61px)',
-    WebkitMaskSize: '51% 51%',
-    WebkitMaskRepeat: 'no-repeat',
-    WebkitMaskPosition: 'top left, top right, bottom left, bottom right'
-  };
-
-  const innerBorderMaskStyle = {
-    WebkitMaskImage: 'radial-gradient(circle at 0 0, transparent 44px, black 45px), radial-gradient(circle at 100% 0, transparent 44px, black 45px), radial-gradient(circle at 100% 100%, transparent 44px, black 45px), radial-gradient(circle at 0 100%, transparent 44px, black 45px)',
-    WebkitMaskSize: '51% 51%',
-    WebkitMaskRepeat: 'no-repeat',
-    WebkitMaskPosition: 'top left, top right, bottom left, bottom right'
-  };
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-full overflow-hidden">
@@ -259,18 +253,18 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
 
             <div className="w-[480px] h-[720px] rounded-[2.5rem] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.9)] mb-16 border border-white/10 bg-surface">
               {poster.base64 && (
-                <img src={poster.base64} alt={movie.title} crossOrigin="anonymous" className="w-full h-full object-cover" />
+                <img src={poster.base64} alt={movieTitle} crossOrigin="anonymous" className="w-full h-full object-cover" />
               )}
             </div>
 
             <h2 className={`font-display italic text-center mb-6 drop-shadow-md max-w-[750px] leading-tight text-white ${
-              movie.title.length > 40 ? 'text-5xl' :
-              movie.title.length > 20 ? 'text-6xl' :
+              movieTitle.length > 40 ? 'text-5xl' :
+              movieTitle.length > 20 ? 'text-6xl' :
               'text-8xl'
             }`}>
-              {movie.title}
+              {movieTitle}
             </h2>
-            <p className="font-body text-primary/40 text-xl mb-16 uppercase tracking-[0.4em] font-bold italic">{movie.release_date?.split('-')[0]}</p>
+            <p className="font-body text-primary/40 text-xl mb-16 uppercase tracking-[0.4em] font-bold italic">{movieYear}</p>
 
             <div className="flex gap-6 mb-16">
               {[1, 2, 3, 4, 5].map((star) => {
@@ -290,8 +284,8 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
             </div>
 
             {reviewText && (
-              <div className="relative mb-20">
-                <p className="font-serif font-bold italic text-white text-5xl text-center leading-relaxed max-w-[750px] break-words">
+              <div className="relative mb-20 max-w-full w-full px-4">
+                <p className={`font-serif font-bold italic text-white text-center leading-relaxed max-w-[750px] break-words mx-auto ${getFontSizeClass(reviewText)}`}>
                   "{reviewText}"
                 </p>
               </div>
@@ -307,7 +301,6 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-20 relative z-10">
-            {/* Background Texture */}
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-10"></div>
             
             <div className="relative z-10 w-full max-w-[900px] flex flex-col items-center">
@@ -326,11 +319,11 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                   </div>
                 </div>
 
-                <div className="flex-1 pt-12">
+                <div className="flex-1 pt-12 min-w-0">
                   <div className="mb-12">
                     <p className="font-body text-primary text-xl uppercase tracking-[0.4em] font-bold mb-4">Case File No. {movie.id % 10000}</p>
-                    <h2 className="font-display text-7xl text-white italic leading-tight mb-4">{movie.title}</h2>
-                    <p className="font-display text-3xl text-on-surface-variant italic opacity-60">{movie.release_date?.split('-')[0]}</p>
+                    <h2 className="font-display text-7xl text-white italic leading-tight mb-4 break-words">{movieTitle}</h2>
+                    <p className="font-display text-3xl text-on-surface-variant italic opacity-60">{movieYear}</p>
                   </div>
 
                   <div className="flex gap-4 mb-16">
@@ -351,8 +344,8 @@ export function ShareWidget({ movie, rating, reviewText, user, backgroundMode = 
                   </div>
 
                   {reviewText && (
-                    <div className="relative">
-                      <p className="font-serif font-bold italic text-white text-4xl leading-relaxed relative z-10">
+                    <div className="relative max-w-full">
+                      <p className={`font-serif font-bold italic text-white leading-relaxed relative z-10 break-words ${getNoirFontSizeClass(reviewText)}`}>
                         "{reviewText}"
                       </p>
                     </div>

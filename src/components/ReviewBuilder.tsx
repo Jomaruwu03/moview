@@ -20,6 +20,7 @@ export function ReviewBuilder({ user }: { user: any }) {
   const [isSearching, setIsSearching] = useState(false);
   const [backgroundMode, setBackgroundMode] = useState<'poster' | 'dark'>('poster');
   const [theme, setTheme] = useState<'modern' | 'noir-frame'>('modern');
+  const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
 
   // New states for saved reviews
   const [userReviews, setUserReviews] = useState<any[]>([]);
@@ -70,7 +71,9 @@ export function ReviewBuilder({ user }: { user: any }) {
       }
       setIsSearching(true);
       try {
-        const data = await tmdb.searchMovies(query, language);
+        const data = mediaType === 'movie' 
+          ? await tmdb.searchMovies(query, language)
+          : await tmdb.searchTV(query, language);
         setResults(data.results || []);
       } catch (err) {
         console.error(err);
@@ -81,7 +84,7 @@ export function ReviewBuilder({ user }: { user: any }) {
     }, 400); // 400ms debounce
 
     return () => clearTimeout(timer);
-  }, [query, language]);
+  }, [query, language, mediaType]);
 
   const handleSaveReview = async () => {
     if (!selectedMovie) return;
@@ -89,19 +92,24 @@ export function ReviewBuilder({ user }: { user: any }) {
     const toastId = toast.loading(language === 'es' ? 'Guardando reseña...' : 'Saving review...');
     
     try {
-      const releaseDate = selectedMovie.release_date && selectedMovie.release_date.trim() !== '' ? selectedMovie.release_date : null;
+      const isTV = mediaType === 'tv' || selectedMovie.first_air_date !== undefined;
+      const dbId = isTV ? -selectedMovie.id : selectedMovie.id;
+      const title = selectedMovie.title || selectedMovie.name;
+      const releaseDate = (selectedMovie.release_date || selectedMovie.first_air_date || '').trim() !== '' 
+        ? (selectedMovie.release_date || selectedMovie.first_air_date) 
+        : null;
       
       // 1. Ensure movie is in local cache database
       const { data: existingMovie } = await supabase
         .from('movies')
         .select('tmdb_id')
-        .eq('tmdb_id', selectedMovie.id)
+        .eq('tmdb_id', dbId)
         .single();
         
       if (!existingMovie) {
         const { error: movieError } = await supabase.from('movies').insert({
-          tmdb_id: selectedMovie.id,
-          title: selectedMovie.title,
+          tmdb_id: dbId,
+          title: title,
           poster_path: selectedMovie.poster_path,
           backdrop_path: selectedMovie.backdrop_path,
           release_date: releaseDate
@@ -113,7 +121,7 @@ export function ReviewBuilder({ user }: { user: any }) {
       // 2. Insert or update review (upsert)
       const { error: reviewError } = await supabase.from('reviews').upsert({
         user_id: user.id,
-        tmdb_id: selectedMovie.id,
+        tmdb_id: dbId,
         rating: rating,
         review_text: reviewText
       }, { onConflict: 'user_id, tmdb_id' });
@@ -148,12 +156,36 @@ export function ReviewBuilder({ user }: { user: any }) {
         
         {!selectedMovie ? (
           <div className="space-y-6 w-full min-w-0">
+            {/* Selector de Tipo de Contenido */}
+            <div className="flex gap-4 p-1 bg-white/5 border border-white/5 rounded-2xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaType('movie');
+                  setResults([]);
+                }}
+                className={`flex-1 py-3 text-center rounded-xl font-body text-[10px] uppercase tracking-widest transition-all duration-300 ${mediaType === 'movie' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-on-surface-variant hover:text-white'}`}
+              >
+                {language === 'es' ? 'Películas' : 'Movies'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaType('tv');
+                  setResults([]);
+                }}
+                className={`flex-1 py-3 text-center rounded-xl font-body text-[10px] uppercase tracking-widest transition-all duration-300 ${mediaType === 'tv' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-on-surface-variant hover:text-white'}`}
+              >
+                {language === 'es' ? 'Series / Animes' : 'TV Shows / Anime'}
+              </button>
+            </div>
+
             <div className="relative group w-full">
               <input 
                 type="text" 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={t('search.placeholder')} 
+                placeholder={mediaType === 'movie' ? t('search.placeholder') : (language === 'es' ? 'Buscar series o animes...' : 'Search series or anime...')} 
                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 pl-14 text-white font-body text-sm outline-none focus:border-primary/40 focus:bg-white/10 transition-all duration-500"
               />
               <div className="absolute left-5 top-5 text-on-surface-variant group-focus-within:text-primary transition-colors">
@@ -178,8 +210,8 @@ export function ReviewBuilder({ user }: { user: any }) {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{movie.title}</p>
-                    <p className="font-body text-xs text-on-surface-variant">{movie.release_date?.split('-')[0]}</p>
+                    <p className="font-body text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{movie.title || movie.name}</p>
+                    <p className="font-body text-xs text-on-surface-variant">{(movie.release_date || movie.first_air_date)?.split('-')[0]}</p>
                   </div>
                 </button>
               ))}
@@ -259,15 +291,20 @@ export function ReviewBuilder({ user }: { user: any }) {
                             <div className="flex items-center gap-1.5 flex-shrink-0 ml-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-all duration-300">
                               <button
                                 onClick={() => {
+                                  const isTV = movie.tmdb_id < 0;
+                                  const realTmdbId = Math.abs(movie.tmdb_id);
                                   setSelectedMovie({
-                                    id: movie.tmdb_id,
+                                    id: realTmdbId,
                                     title: movie.title,
+                                    name: movie.title,
                                     poster_path: movie.poster_path,
                                     backdrop_path: movie.backdrop_path,
-                                    release_date: movie.release_date
+                                    release_date: movie.release_date,
+                                    first_air_date: movie.release_date
                                   });
                                   setRating(rev.rating);
                                   setReviewText(rev.review_text || '');
+                                  setMediaType(isTV ? 'tv' : 'movie');
                                 }}
                                 className="p-2 bg-white/5 hover:bg-primary/20 text-on-surface-variant hover:text-primary rounded-xl transition-all duration-300"
                                 title={language === 'es' ? 'Editar Reseña' : 'Edit Review'}
@@ -328,8 +365,8 @@ export function ReviewBuilder({ user }: { user: any }) {
                   />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-display text-lg sm:text-xl text-white italic truncate pr-2">{selectedMovie.title}</h3>
-                  <p className="font-body text-xs text-on-surface-variant uppercase tracking-widest mt-1">{selectedMovie.release_date?.split('-')[0]}</p>
+                  <h3 className="font-display text-lg sm:text-xl text-white italic truncate pr-2">{selectedMovie.title || selectedMovie.name}</h3>
+                  <p className="font-body text-xs text-on-surface-variant uppercase tracking-widest mt-1">{(selectedMovie.release_date || selectedMovie.first_air_date)?.split('-')[0]}</p>
                 </div>
               </div>
               <button 
@@ -372,11 +409,11 @@ export function ReviewBuilder({ user }: { user: any }) {
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-body text-sm focus:border-primary/40 focus:bg-white/10 outline-none transition-all duration-500 resize-none h-32"
-                  maxLength={50}
+                  maxLength={150}
                   placeholder={language === 'es' ? 'Escribe tu veredicto...' : 'Write your verdict...'}
                 />
                 <div className="absolute bottom-4 right-4 font-body text-[10px] text-on-surface-variant opacity-50 tracking-widest">
-                  {reviewText.length}/50
+                  {reviewText.length}/150
                 </div>
               </div>
             </div>
