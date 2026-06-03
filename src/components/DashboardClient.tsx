@@ -14,7 +14,7 @@ type Tab = 'review' | 'top5' | 'lists' | 'daily' | 'profile' | 'admin' | 'commun
 
 export function DashboardClient({ user, initialTab }: { user: any; initialTab?: string }) {
   const [currentUser, setCurrentUser] = useState(user);
-  const [activeTab, setActiveTab] = useState<Tab>((initialTab as Tab) || 'review');
+  const [activeTab, setActiveTab] = useState<Tab>((initialTab as Tab) || 'community');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -375,16 +375,16 @@ export function DashboardClient({ user, initialTab }: { user: any; initialTab?: 
   };
 
   const tabs = [
+    { id: 'community', label: language === 'es' ? 'Comunidad' : 'Community', icon: Users },
     { id: 'review', label: t('sidebar.review'), icon: Star },
-    { id: 'top5', label: t('sidebar.top5'), icon: Clapperboard },
     { id: 'lists', label: t('sidebar.lists'), icon: List },
     { id: 'daily', label: t('sidebar.daily'), icon: Calendar },
-    { id: 'community', label: language === 'es' ? 'Comunidad' : 'Community', icon: Users },
+    { id: 'top5', label: t('sidebar.top5'), icon: Clapperboard },
     { id: 'profile', label: t('sidebar.profile'), icon: User },
   ];
 
   if (currentUser.is_admin) {
-    tabs.splice(4, 0, { id: 'admin', label: t('sidebar.admin'), icon: Shield });
+    tabs.splice(tabs.length - 1, 0, { id: 'admin', label: t('sidebar.admin'), icon: Shield });
   }
 
   return (

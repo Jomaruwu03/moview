@@ -22,7 +22,7 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   const params = await searchParams;
-  const initialTab = (params.tab as string) || 'review';
+  const initialTab = (params.tab as string) || 'community';
 
   const { data: profile } = await supabase
     .from('profiles')
