@@ -142,15 +142,34 @@ export function TopMovies({ user }: { user: any }) {
       }
     }
 
-    const { error: favError } = await supabase.from('favorite_movies').upsert({
-      user_id: user.id,
-      tmdb_id: dbId,
-      rank: newFavs.length
-    }, { onConflict: 'user_id, rank' });
+    // 3. Delete all favorites for this user and insert new ones to avoid rank gaps/conflicts
+    const { error: deleteError } = await supabase
+      .from('favorite_movies')
+      .delete()
+      .eq('user_id', user.id);
 
-    if (favError) {
-      console.error(favError);
-      toast.error('Error al guardar tu Top', { description: favError.message });
+    if (deleteError) {
+      console.error(deleteError);
+      toast.error('Error al guardar tu Top', { description: deleteError.message });
+      setFavorites(favorites);
+      return;
+    }
+
+    const insertData = newFavs.map((favMovie, i) => {
+      const isTVShow = favMovie.first_air_date !== undefined;
+      const favDbId = isTVShow ? -favMovie.id : favMovie.id;
+      return {
+        user_id: user.id,
+        tmdb_id: favDbId,
+        rank: i + 1
+      };
+    });
+
+    const { error: insertError } = await supabase.from('favorite_movies').insert(insertData);
+
+    if (insertError) {
+      console.error(insertError);
+      toast.error('Error al guardar tu Top', { description: insertError.message });
       setFavorites(favorites);
       return;
     }
@@ -167,26 +186,32 @@ export function TopMovies({ user }: { user: any }) {
     if (deleteError) {
       console.error(deleteError);
       toast.error('Error al actualizar Top', { description: deleteError.message });
+      setFavorites(favorites);
       return;
     }
 
-    let hasError = false;
-    for (let i = 0; i < newFavs.length; i++) {
-      const isTV = newFavs[i].first_air_date !== undefined;
-      const dbId = isTV ? -newFavs[i].id : newFavs[i].id;
-      const { error: insertError } = await supabase.from('favorite_movies').insert({
-        user_id: user.id,
-        tmdb_id: dbId,
-        rank: i + 1
+    if (newFavs.length > 0) {
+      const insertData = newFavs.map((favMovie, i) => {
+        const isTV = favMovie.first_air_date !== undefined;
+        const favDbId = isTV ? -favMovie.id : favMovie.id;
+        return {
+          user_id: user.id,
+          tmdb_id: favDbId,
+          rank: i + 1
+        };
       });
-      if (insertError) hasError = true;
+
+      const { error: insertError } = await supabase.from('favorite_movies').insert(insertData);
+      
+      if (insertError) {
+        console.error(insertError);
+        toast.error('Ocurrió un problema al reordenar tu Top.', { description: insertError.message });
+        setFavorites(favorites);
+        return;
+      }
     }
 
-    if (hasError) {
-      toast.error('Ocurrió un problema al reordenar tu Top.');
-    } else {
-      toast.info('Eliminada del Top', { description: `${movieRemoved.title || movieRemoved.name} removida de tu lista.` });
-    }
+    toast.info('Eliminada del Top', { description: `${movieRemoved.title || movieRemoved.name} removida de tu lista.` });
   };
 
   const exportAsImage = async () => {
