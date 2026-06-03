@@ -329,8 +329,8 @@ export function CustomLists({ user }: { user: any }) {
               </p>
               <p className="font-body text-xs text-on-surface-variant max-w-sm mx-auto opacity-60">
                 {language === 'es' 
-                  ? 'Crea tu propia colección personalizada, añade hasta 5 películas y compártela.' 
-                  : 'Create your own custom collection, add up to 5 movies, and share it.'}
+                  ? 'Crea tu propia colección personalizada, añade hasta 10 películas y compártela.' 
+                  : 'Create your own custom collection, add up to 10 movies, and share it.'}
               </p>
             </div>
           ) : (
@@ -482,85 +482,90 @@ export function CustomLists({ user }: { user: any }) {
             {/* Películas Selector/Ranking */}
             <div className="lg:col-span-2 space-y-6">
               <span className="block font-body text-xs uppercase tracking-widest text-on-surface-variant mb-2">
-                {language === 'es' ? 'Tu Selección (1 a 5)' : 'Your Selection (1 to 5)'}
+                {language === 'es' ? 'Tu Selección (hasta 10)' : 'Your Selection (up to 10)'}
               </span>
 
               <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((rank) => {
-                  const item = listMovies.find(m => m.rank === rank);
-                  return (
-                    <div 
-                      key={rank} 
-                      className={`glass-card p-4 md:p-6 rounded-3xl border transition-all duration-500 ${item ? 'border-white/10' : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.02]'}`}
-                    >
-                      {item ? (
-                        <div className="flex flex-col md:flex-row gap-6">
-                          <div className="w-20 md:w-24 aspect-[2/3] relative rounded-xl overflow-hidden flex-shrink-0 border border-white/10">
-                            {item.movie.poster_path ? (
-                              <img src={tmdb.getImageUrl(item.movie.poster_path, 'w500')} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full bg-white/5 flex items-center justify-center font-display text-3xl">?</div>
-                            )}
-                            <div className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/80 flex items-center justify-center font-display italic text-primary text-xs border border-primary/20">
-                              0{rank}
-                            </div>
-                          </div>
-
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div className="flex justify-between items-start gap-4">
-                              <div>
-                                <h4 className="font-display text-xl text-white italic leading-tight mb-1">{item.movie.title || item.movie.name}</h4>
-                                <p className="font-body text-[10px] uppercase tracking-wider text-on-surface-variant opacity-60">
-                                  {(item.movie.release_date || item.movie.first_air_date)?.split('-')[0]}
-                                </p>
+                {(() => {
+                  const maxRank = listMovies.reduce((max, item) => Math.max(max, item.rank), 0);
+                  const visibleSlotsCount = Math.min(10, Math.max(5, maxRank + 1));
+                  const slots = Array.from({ length: visibleSlotsCount }, (_, i) => i + 1);
+                  return slots.map((rank) => {
+                    const item = listMovies.find(m => m.rank === rank);
+                    return (
+                      <div 
+                        key={rank} 
+                        className={`glass-card p-4 md:p-6 rounded-3xl border transition-all duration-500 ${item ? 'border-white/10' : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.02]'}`}
+                      >
+                        {item ? (
+                          <div className="flex flex-col md:flex-row gap-6">
+                            <div className="w-20 md:w-24 aspect-[2/3] relative rounded-xl overflow-hidden flex-shrink-0 border border-white/10">
+                              {item.movie.poster_path ? (
+                                <img src={tmdb.getImageUrl(item.movie.poster_path, 'w500')} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-white/5 flex items-center justify-center font-display text-3xl">?</div>
+                              )}
+                              <div className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/80 flex items-center justify-center font-display italic text-primary text-xs border border-primary/20">
+                                {rank < 10 ? '0' : ''}{rank}
                               </div>
-                              <button 
-                                onClick={() => handleRemoveMovie(rank)}
-                                className="p-2 hover:bg-white/5 text-on-surface-variant hover:text-red-400 rounded-full transition-all"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
                             </div>
 
-                            <div className="mt-4">
-                              <label className="block font-body text-[9px] uppercase tracking-wider text-on-surface-variant opacity-50 mb-1.5">
-                                {language === 'es' ? 'Nota / Comentario' : 'Note / Comment'}
-                              </label>
-                              <input
-                                type="text"
-                                value={item.user_note}
-                                onChange={(e) => handleNoteChange(rank, e.target.value)}
-                                placeholder={language === 'es' ? '¿Por qué esta película está en este puesto? (Opcional)' : 'Why is this movie in this slot? (Optional)'}
-                                maxLength={280}
-                                className="w-full bg-white/5 border border-white/5 hover:border-white/10 rounded-lg p-2.5 font-body text-xs text-white focus:border-primary/20 outline-none transition-all"
-                              />
+                            <div className="flex-1 flex flex-col justify-between">
+                              <div className="flex justify-between items-start gap-4">
+                                <div>
+                                  <h4 className="font-display text-xl text-white italic leading-tight mb-1">{item.movie.title || item.movie.name}</h4>
+                                  <p className="font-body text-[10px] uppercase tracking-wider text-on-surface-variant opacity-60">
+                                    {(item.movie.release_date || item.movie.first_air_date)?.split('-')[0]}
+                                  </p>
+                                </div>
+                                <button 
+                                  onClick={() => handleRemoveMovie(rank)}
+                                  className="p-2 hover:bg-white/5 text-on-surface-variant hover:text-red-400 rounded-full transition-all"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              <div className="mt-4">
+                                <label className="block font-body text-[9px] uppercase tracking-wider text-on-surface-variant opacity-50 mb-1.5">
+                                  {language === 'es' ? 'Nota / Comentario' : 'Note / Comment'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={item.user_note}
+                                  onChange={(e) => handleNoteChange(rank, e.target.value)}
+                                  placeholder={language === 'es' ? '¿Por qué esta película está en este puesto? (Opcional)' : 'Why is this movie in this slot? (Optional)'}
+                                  maxLength={280}
+                                  className="w-full bg-white/5 border border-white/5 hover:border-white/10 rounded-lg p-2.5 font-body text-xs text-white focus:border-primary/20 outline-none transition-all"
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-display italic text-white/20 text-sm">
-                              0{rank}
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-display italic text-white/20 text-sm">
+                                {rank < 10 ? '0' : ''}{rank}
+                              </div>
+                              <span className="font-display text-sm italic text-white/30">
+                                {language === 'es' ? 'Ninguna obra seleccionada' : 'No masterpiece selected'}
+                              </span>
                             </div>
-                            <span className="font-display text-sm italic text-white/30">
-                              {language === 'es' ? 'Ninguna obra seleccionada' : 'No masterpiece selected'}
-                            </span>
+                            <button
+                              onClick={() => {
+                                setMediaType('movie');
+                                setActiveRankSlot(rank);
+                              }}
+                              className="px-4 py-2 border border-white/10 hover:border-primary/30 rounded-xl font-body text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-all duration-300"
+                            >
+                              {language === 'es' ? 'Buscar Obra' : 'Find Media'}
+                            </button>
                           </div>
-                          <button
-                            onClick={() => {
-                              setMediaType('movie');
-                              setActiveRankSlot(rank);
-                            }}
-                            className="px-4 py-2 border border-white/10 hover:border-primary/30 rounded-xl font-body text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-all duration-300"
-                          >
-                            {language === 'es' ? 'Buscar Obra' : 'Find Media'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -577,7 +582,7 @@ export function CustomLists({ user }: { user: any }) {
                   {language === 'es' ? 'Búsqueda' : 'Search'}
                 </span>
                 <h3 className="font-display text-2xl italic text-white">
-                  {language === 'es' ? `Añadir a la posición 0${activeRankSlot}` : `Add to position 0${activeRankSlot}`}
+                  {language === 'es' ? `Añadir a la posición ${activeRankSlot < 10 ? '0' : ''}${activeRankSlot}` : `Add to position ${activeRankSlot < 10 ? '0' : ''}${activeRankSlot}`}
                 </h3>
               </div>
               <button 
