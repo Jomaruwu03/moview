@@ -16,6 +16,12 @@ export function DailyRecommendation({ user }: { user: any }) {
   const { language, t } = useLanguage();
   const supabase = createClient();
 
+  // Estados para reseñar la recomendación diaria
+  const [userReview, setUserReview] = useState<any>(null);
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [isSavingReview, setIsSavingReview] = useState(false);
+
   const getDayOfYear = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 0);
@@ -52,6 +58,83 @@ export function DailyRecommendation({ user }: { user: any }) {
     };
     loadData();
   }, [supabase.auth]);
+
+  useEffect(() => {
+    const checkUserReview = async () => {
+      if (!movie) return;
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('tmdb_id', movie.id)
+          .maybeSingle();
+          
+        if (!error && data) {
+          setUserReview(data);
+          setRating(data.rating);
+          setReviewText(data.review_text || '');
+        } else {
+          setUserReview(null);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    checkUserReview();
+  }, [movie, user.id]);
+
+  const saveDailyReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!movie) return;
+    setIsSavingReview(true);
+    const toastId = toast.loading(language === 'es' ? 'Publicando en comunidad...' : 'Publishing to community...');
+    
+    try {
+      const dbId = movie.id;
+      const title = movie.title;
+      const releaseDate = (movie.release_date || '').trim() !== '' ? movie.release_date : null;
+      
+      const { data: existingMovie } = await supabase
+        .from('movies')
+        .select('tmdb_id')
+        .eq('tmdb_id', dbId)
+        .single();
+        
+      if (!existingMovie) {
+        const { error: movieError } = await supabase.from('movies').insert({
+          tmdb_id: dbId,
+          title: title,
+          poster_path: movie.poster_path,
+          backdrop_path: movie.backdrop_path,
+          release_date: releaseDate
+        });
+        if (movieError) throw movieError;
+      }
+      
+      const { data, error: reviewError } = await supabase
+        .from('reviews')
+        .upsert({
+          user_id: user.id,
+          tmdb_id: dbId,
+          rating: rating,
+          review_text: reviewText,
+          is_daily: true
+        }, { onConflict: 'user_id, tmdb_id' })
+        .select()
+        .single();
+        
+      if (reviewError) throw reviewError;
+      
+      setUserReview(data);
+      toast.success(language === 'es' ? '¡Tu opinión ha sido compartida en la comunidad!' : 'Your review has been shared with the community!', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(language === 'es' ? 'Error al publicar' : 'Failed to publish', { description: err.message, id: toastId });
+    } finally {
+      setIsSavingReview(false);
+    }
+  };
 
   const handleReveal = async (isAutoLoad = false) => {
     if (!isAutoLoad) {
@@ -268,6 +351,80 @@ export function DailyRecommendation({ user }: { user: any }) {
                   : (language === 'es' ? 'Marcar como Vista' : 'Mark as Watched')}
               </button>
             </div>
+            
+            {hasWatchedToday && (
+              <div className="p-8 md:p-12 border-t border-white/5 bg-white/[0.01] space-y-6">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h4 className="font-display text-2xl italic text-white">
+                    {language === 'es' ? '¿Qué te pareció la película?' : 'What did you think of the movie?'}
+                  </h4>
+                </div>
+                
+                {userReview ? (
+                  <div className="glass-card border border-white/5 p-6 rounded-2xl space-y-3 bg-white/[0.02]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`w-4 h-4 ${star <= userReview.rating ? 'text-primary fill-primary' : 'text-neutral-600'}`} 
+                          />
+                        ))}
+                      </div>
+                      <span className="font-body text-[9px] uppercase tracking-widest text-primary/60 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full font-bold">
+                        {language === 'es' ? 'Compartido en Comunidad' : 'Shared in Community'}
+                      </span>
+                    </div>
+                    <p className="font-body text-sm text-on-surface-variant leading-relaxed opacity-90 italic">
+                      "{userReview.review_text}"
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={saveDailyReview} className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <span className="font-body text-xs uppercase tracking-widest text-on-surface-variant">
+                        {language === 'es' ? 'Tu Calificación:' : 'Your Rating:'}
+                      </span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            type="button"
+                            key={star}
+                            onClick={() => setRating(star)}
+                            className="text-neutral-500 hover:text-primary transition-colors focus:outline-none"
+                          >
+                            <Star className={`w-6 h-6 ${star <= rating ? 'text-primary fill-primary' : 'text-neutral-600'}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="relative">
+                      <textarea
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value.slice(0, 150))}
+                        placeholder={language === 'es' ? 'Escribe una crítica corta (máx. 150 caracteres)...' : 'Write a short review (max 150 characters)...'}
+                        rows={3}
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 font-body text-sm text-white focus:border-primary outline-none transition-colors resize-none"
+                      />
+                      <div className="absolute bottom-4 right-4 font-body text-[10px] text-on-surface-variant/40">
+                        {reviewText.length} / 150
+                      </div>
+                    </div>
+                    
+                    <button
+                      type="submit"
+                      disabled={isSavingReview}
+                      className="px-8 py-3 border-[0.5px] border-primary/40 bg-primary/5 font-body text-[10px] uppercase tracking-[0.2em] text-primary hover:bg-primary hover:text-on-primary transition-all duration-500"
+                    >
+                      {isSavingReview ? '...' : (language === 'es' ? 'Publicar Opinión' : 'Publish Review')}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
         ) : null}
       </div>
