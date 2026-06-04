@@ -27,6 +27,7 @@ export function ReviewBuilder({ user }: { user: any }) {
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
 
   const loadUserReviews = async () => {
     setIsLoadingReviews(true);
@@ -92,7 +93,7 @@ export function ReviewBuilder({ user }: { user: any }) {
     const toastId = toast.loading(language === 'es' ? 'Guardando reseña...' : 'Saving review...');
     
     try {
-      const isTV = mediaType === 'tv' || selectedMovie.first_air_date !== undefined;
+      const isTV = mediaType === 'tv';
       const dbId = isTV ? -selectedMovie.id : selectedMovie.id;
       const title = selectedMovie.title || selectedMovie.name;
       const releaseDate = (selectedMovie.release_date || selectedMovie.first_air_date || '').trim() !== '' 
@@ -119,12 +120,19 @@ export function ReviewBuilder({ user }: { user: any }) {
       }
       
       // 2. Insert or update review (upsert)
-      const { error: reviewError } = await supabase.from('reviews').upsert({
+      const reviewPayload: any = {
         user_id: user.id,
         tmdb_id: dbId,
         rating: rating,
         review_text: reviewText
-      }, { onConflict: 'user_id, tmdb_id' });
+      };
+      if (editingReviewId) {
+        reviewPayload.id = editingReviewId;
+      }
+
+      const { error: reviewError } = await supabase.from('reviews').upsert(reviewPayload, {
+        onConflict: editingReviewId ? 'id' : 'user_id, tmdb_id'
+      });
       
       if (reviewError) throw reviewError;
       
@@ -134,6 +142,7 @@ export function ReviewBuilder({ user }: { user: any }) {
       setSelectedMovie(null);
       setReviewText('');
       setRating(5);
+      setEditingReviewId(null);
       loadUserReviews();
     } catch (err: any) {
       console.error('Error saving review:', err);
@@ -305,6 +314,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                                   setRating(rev.rating);
                                   setReviewText(rev.review_text || '');
                                   setMediaType(isTV ? 'tv' : 'movie');
+                                  setEditingReviewId(rev.id);
                                 }}
                                 className="p-2 bg-white/5 hover:bg-primary/20 text-on-surface-variant hover:text-primary rounded-xl transition-all duration-300"
                                 title={language === 'es' ? 'Editar Reseña' : 'Edit Review'}
@@ -374,6 +384,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                   setSelectedMovie(null);
                   setReviewText('');
                   setRating(5);
+                  setEditingReviewId(null);
                 }}
                 className="font-body text-[10px] uppercase tracking-widest text-primary/60 hover:text-primary transition-colors border-b border-primary/20 flex-shrink-0"
               >
