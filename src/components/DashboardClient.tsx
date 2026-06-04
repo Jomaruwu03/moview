@@ -73,47 +73,50 @@ export function DashboardClient({ user, initialTab }: { user: any; initialTab?: 
       
       const { data: followingData, error: err1 } = await supabase
         .from('follows')
-        .select('following_id')
+        .select(`
+          following_id,
+          profiles:following_id (
+            id,
+            username,
+            avatar_url
+          )
+        `)
         .eq('follower_id', currentUser.id);
         
       const { data: followersData, error: err2 } = await supabase
         .from('follows')
-        .select('follower_id')
+        .select(`
+          follower_id,
+          profiles:follower_id (
+            id,
+            username,
+            avatar_url
+          )
+        `)
         .eq('following_id', currentUser.id);
         
       if (err1) throw err1;
       if (err2) throw err2;
       
-      const followingIds = followingData?.map(f => f.following_id) || [];
-      const followerIds = followersData?.map(f => f.follower_id) || [];
-      
-      let followingProfiles: any[] = [];
-      if (followingIds.length > 0) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, username, avatar_url')
-          .in('id', followingIds);
-        if (!error && data) {
-          followingProfiles = data.map(p => ({ ...p, isFollowing: true }));
-        }
-      }
-      
-      let followerProfiles: any[] = [];
-      if (followerIds.length > 0) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, username, avatar_url')
-          .in('id', followerIds);
-        if (!error && data) {
-          followerProfiles = data.map(p => ({
-            ...p,
-            isFollowing: followingIds.includes(p.id)
-          }));
-        }
-      }
+      const followingProfiles = (followingData as any || [])
+        .map((f: any) => f.profiles)
+        .filter(Boolean)
+        .map((p: any) => ({ ...p, isFollowing: true }));
+
+      const followingIds = followingProfiles.map((p: any) => p.id);
+
+      const followerProfiles = (followersData as any || [])
+        .map((f: any) => f.profiles)
+        .filter(Boolean)
+        .map((p: any) => ({
+          ...p,
+          isFollowing: followingIds.includes(p.id)
+        }));
       
       setFollowingList(followingProfiles);
       setFollowersList(followerProfiles);
+      setFollowingCount(followingProfiles.length);
+      setFollowerCount(followerProfiles.length);
     } catch (err) {
       console.error(err);
     } finally {
@@ -165,6 +168,15 @@ export function DashboardClient({ user, initialTab }: { user: any; initialTab?: 
             id,
             username,
             avatar_url
+          ),
+          list_movies (
+            tmdb_id,
+            rank,
+            movies (
+              tmdb_id,
+              title,
+              poster_path
+            )
           )
         `)
         .eq('is_public', true)
@@ -173,32 +185,27 @@ export function DashboardClient({ user, initialTab }: { user: any; initialTab?: 
         
       if (err2) throw err2;
       
-      const listsWithMovies = [];
-      for (const list of listsData || []) {
-        const { data: listMoviesData } = await supabase
-          .from('list_movies')
-          .select('tmdb_id')
-          .eq('list_id', list.id)
-          .order('rank', { ascending: true })
-          .limit(3);
+      const listsWithMovies = (listsData as any || []).map((list: any) => {
+        const sortedListMovies = (list.list_movies || [])
+          .sort((a: any, b: any) => a.rank - b.rank)
+          .slice(0, 3);
           
-        const movieIds = listMoviesData?.map(lm => lm.tmdb_id) || [];
-        let cachedMovies: any[] = [];
-        
-        if (movieIds.length > 0) {
-          const { data: moviesData } = await supabase
-            .from('movies')
-            .select('tmdb_id, title, poster_path')
-            .in('tmdb_id', movieIds);
-          cachedMovies = moviesData || [];
-        }
-        
-        listsWithMovies.push({
-          ...list,
+        const cachedMovies = sortedListMovies.map((lm: any) => ({
+          tmdb_id: lm.tmdb_id,
+          title: lm.movies?.title || 'N/A',
+          poster_path: lm.movies?.poster_path
+        }));
+
+        return {
+          id: list.id,
+          title: list.title,
+          description: list.description,
+          created_at: list.created_at,
+          profiles: list.profiles,
           type: 'list',
           movies: cachedMovies
-        });
-      }
+        };
+      });
       
       const formattedReviews = (reviewsData || []).map(r => ({
         ...r,
@@ -218,10 +225,9 @@ export function DashboardClient({ user, initialTab }: { user: any; initialTab?: 
   };
 
   useEffect(() => {
-    if (activeTab === 'profile' || activeTab === 'community') {
+    if (activeTab === 'profile') {
       fetchFollowsCount();
-    }
-    if (activeTab === 'community') {
+    } else if (activeTab === 'community') {
       fetchSocialDetails();
       fetchCommunityFeed();
     }
