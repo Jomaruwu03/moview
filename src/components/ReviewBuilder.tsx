@@ -28,6 +28,7 @@ export function ReviewBuilder({ user }: { user: any }) {
   const [isSaving, setIsSaving] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [downloadTrigger, setDownloadTrigger] = useState<number>(0);
 
   const loadUserReviews = async () => {
     setIsLoadingReviews(true);
@@ -138,11 +139,8 @@ export function ReviewBuilder({ user }: { user: any }) {
       
       toast.success(language === 'es' ? '¡Reseña guardada con éxito!' : 'Review saved successfully!', { id: toastId });
       
-      // Reset form and reload reviews
-      setSelectedMovie(null);
-      setReviewText('');
-      setRating(5);
-      setEditingReviewId(null);
+      // Trigger automatic download
+      setDownloadTrigger(Date.now());
       loadUserReviews();
     } catch (err: any) {
       console.error('Error saving review:', err);
@@ -150,9 +148,20 @@ export function ReviewBuilder({ user }: { user: any }) {
         description: err.message,
         id: toastId
       });
+      // If error occurs, reset trigger
+      setDownloadTrigger(0);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleExportComplete = () => {
+    // Reset form after download completes
+    setSelectedMovie(null);
+    setReviewText('');
+    setRating(5);
+    setEditingReviewId(null);
+    setDownloadTrigger(0);
   };
 
   return (
@@ -499,6 +508,8 @@ export function ReviewBuilder({ user }: { user: any }) {
                 user={user} 
                 backgroundMode={backgroundMode}
                 theme={theme}
+                triggerDownload={downloadTrigger}
+                onExportComplete={handleExportComplete}
               />
             </div>
           ) : (
