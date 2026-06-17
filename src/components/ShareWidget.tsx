@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, memo } from 'react';
 import { toJpeg } from 'html-to-image';
 import { Star, Share2, Cat } from 'lucide-react';
 import { tmdb } from '@/lib/tmdb';
@@ -82,7 +82,7 @@ interface ShareWidgetProps {
 import { useLanguage } from '@/context/LanguageContext';
 import { toast } from 'sonner';
 
-export function ShareWidget({ 
+export const ShareWidget = memo(function ShareWidget({ 
   movie, 
   rating, 
   reviewText = '', 
@@ -405,4 +405,4 @@ export function ShareWidget({
       </button>
     </div>
   );
-} 
+}); 

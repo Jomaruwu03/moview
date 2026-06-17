@@ -17,6 +17,7 @@ export function ReviewBuilder({ user }: { user: any }) {
   
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const [debouncedReviewText, setDebouncedReviewText] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [backgroundMode, setBackgroundMode] = useState<'poster' | 'dark'>('poster');
   const [theme, setTheme] = useState<'modern' | 'noir-frame'>('modern');
@@ -60,6 +61,13 @@ export function ReviewBuilder({ user }: { user: any }) {
       setIsLoadingReviews(false);
     }
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedReviewText(reviewText);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [reviewText]);
 
   useEffect(() => {
     loadUserReviews();
@@ -159,6 +167,7 @@ export function ReviewBuilder({ user }: { user: any }) {
     // Reset form after download completes
     setSelectedMovie(null);
     setReviewText('');
+    setDebouncedReviewText('');
     setRating(5);
     setEditingReviewId(null);
     setDownloadTrigger(0);
@@ -322,6 +331,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                                   });
                                   setRating(rev.rating);
                                   setReviewText(rev.review_text || '');
+                                  setDebouncedReviewText(rev.review_text || '');
                                   setMediaType(isTV ? 'tv' : 'movie');
                                   setEditingReviewId(rev.id);
                                 }}
@@ -392,6 +402,7 @@ export function ReviewBuilder({ user }: { user: any }) {
                 onClick={() => {
                   setSelectedMovie(null);
                   setReviewText('');
+                  setDebouncedReviewText('');
                   setRating(5);
                   setEditingReviewId(null);
                 }}
@@ -504,7 +515,7 @@ export function ReviewBuilder({ user }: { user: any }) {
               <ShareWidget 
                 movie={selectedMovie} 
                 rating={rating} 
-                reviewText={reviewText} 
+                reviewText={debouncedReviewText} 
                 user={user} 
                 backgroundMode={backgroundMode}
                 theme={theme}
