@@ -75,12 +75,23 @@ interface ShareWidgetProps {
   };
   backgroundMode?: 'poster' | 'dark';
   theme?: 'modern' | 'noir-frame';
+  triggerDownload?: number;
+  onExportComplete?: () => void;
 }
 
 import { useLanguage } from '@/context/LanguageContext';
 import { toast } from 'sonner';
 
-export function ShareWidget({ movie, rating, reviewText = '', user, backgroundMode = 'poster', theme = 'modern' }: ShareWidgetProps) {
+export function ShareWidget({ 
+  movie, 
+  rating, 
+  reviewText = '', 
+  user, 
+  backgroundMode = 'poster', 
+  theme = 'modern',
+  triggerDownload,
+  onExportComplete
+}: ShareWidgetProps) {
   const { language } = useLanguage();
   const widgetRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -201,8 +212,15 @@ export function ShareWidget({ movie, rating, reviewText = '', user, backgroundMo
       toast.error(language === 'es' ? 'Error al generar la imagen' : 'Failed to generate image', { id: toastId });
     } finally {
       setIsExporting(false);
+      if (onExportComplete) onExportComplete();
     }
   };
+
+  useEffect(() => {
+    if (triggerDownload && triggerDownload > 0 && isReadyToExport && !isExporting) {
+      exportImage();
+    }
+  }, [triggerDownload, isReadyToExport]);
 
   const isDark = backgroundMode === 'dark';
 
